@@ -8,6 +8,8 @@ services:
       - .:/mfa_passport_bot
     environment:
       - TZ=Europe/London
+    networks:
+      - passport_net
 
   mongodb:
     image: mongo:6-jammy
@@ -16,7 +18,12 @@ services:
     volumes:
       - dbdata1:/data/db
     restart: on-failure
-
+    networks:
+      - passport_net
 
 volumes:
   dbdata1:
+
+networks:
+  passport_net:
+    driver: bridge
