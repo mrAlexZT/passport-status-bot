@@ -128,5 +128,12 @@ dmypy.json
 .pyre/
 
 .vscode
+.idea
 
 out.txt
+logs/
+.DS_Store
+/poetry.lock
+
+# Test files
+/!TEST_DELETE_ME/
