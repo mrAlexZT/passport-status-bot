@@ -34,7 +34,7 @@ async def cabinet(message: types.Message):
     msg_text = initial_message + "\n*Статуси заявки:*\n"
     for i, s in enumerate(application.statuses, start=1):
         date = datetime.fromtimestamp(int(s.date) / 1000).strftime("%Y-%m-%d %H:%M")
-        msg_text += f"{i}. *{s.status}* \n_{date}_\n\n"
+        msg_text += f"{i}. *{s.status}* _{date}_\n\n"
 
     msg_text += dedent(
         f"""
