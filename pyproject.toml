@@ -16,7 +16,7 @@ aiogram = "2.23.1"
 apscheduler = "^3.10.4"
 pillow = "^10.1.0"
 qreader = "^3.12"
-
+matplotlib = "*"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,10 +1,13 @@
 import asyncio
+from datetime import datetime
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import DEFAULT_RATE_LIMIT
 from aiogram.dispatcher.handler import CancelHandler, current_handler
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.utils.exceptions import Throttled
+
+from bot.core.models.request_log import RequestLog
 
 
 def rate_limit(limit: int, key=None):
@@ -48,6 +51,12 @@ class ThrottlingMiddleware(BaseMiddleware):
         super(ThrottlingMiddleware, self).__init__()
 
     async def on_process_message(self, message: types.Message, data: dict):
+        # Log every incoming message
+        try:
+            await RequestLog(telegram_id=str(message.from_user.id), timestamp=datetime.utcnow()).insert()
+        except Exception:
+            pass
+
         """
 
         This handler is called when dispatcher receives a message
