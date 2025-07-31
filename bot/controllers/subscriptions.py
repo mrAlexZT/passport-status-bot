@@ -152,9 +152,14 @@ async def manual_application_update(message: types.Message):
         )
         return
 
-    if _application.last_update > datetime.now() - timedelta(minutes=20):
+    # Set wait time based on admin status
+    _wait_time_minutes = 2 if getattr(_user, 'is_admin', False) else 60
+
+    if _application.last_update > datetime.now() - timedelta(minutes=_wait_time_minutes):
+
         await _message.edit_text(
-            "Останнє оновлення було менше 20хв тому, спробуйте пізніше."
+            f"Останнє оновлення було менше {_wait_time_minutes} хв тому, спробуйте пізніше.",
+            parse_mode="Markdown",
         )
         return
 
@@ -193,7 +198,8 @@ async def manual_application_update(message: types.Message):
 
         await _message.edit_text(_msg_text, parse_mode="Markdown")
     else:
-        await _message.edit_text("Статуси не змінилися.")
+        _msg_text = f"Статуси не змінилися. Остання зміна статусу:\n\n{_application.statuses[-1].status}"
+        await _message.edit_text(_msg_text, parse_mode="Markdown")
 
     _application.statuses = _statuses
     _application.last_update = datetime.now()
