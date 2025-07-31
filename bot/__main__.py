@@ -25,6 +25,7 @@ from bot.middlewares.antiflood import ThrottlingMiddleware, rate_limit
 from bot.middlewares.debug import LoggerMiddleware
 
 from bot.core.config import settings
+from bot.core.notify_admin import notify_admin
 
 scheduler = AsyncIOScheduler()
 
@@ -76,6 +77,11 @@ async def startup(dp: Dispatcher):
             PushModel,
         ],
     )
+    await notify_admin(f"🚀 Bot started at {datetime.datetime.now().isoformat()}")
+
+
+async def shutdown(dp: Dispatcher):
+    await notify_admin(f"🛑 Bot stopped at {datetime.datetime.now().isoformat()}")
 
 
 @dp.message_handler(commands=["ping"])
@@ -142,7 +148,17 @@ def main():
     )
     scheduler.start()
     handlers_setup.setup(dp)
-    executor.start_polling(dp, loop=loop, skip_updates=True, on_startup=startup)
+    try:
+        executor.start_polling(
+            dp,
+            loop=loop,
+            skip_updates=True,
+            on_startup=startup,
+            on_shutdown=shutdown,
+        )
+    except Exception as e:
+        loop.run_until_complete(notify_admin(f"❗️ Bot error: {e}"))
+        raise
 
 
 if __name__ == "__main__":
