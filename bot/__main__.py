@@ -130,7 +130,7 @@ async def set_user_commands(user_id):
         types.BotCommand(command="/stats_graph", description="Графік запитів"),
     ]
     user_commands = [cmd for cmd in admin_commands if cmd.command not in ["/broadcast", "/get_out_txt", "/stats", "/stats_graph"]]
-    if str(user_id) == str(settings.ADMIN_ID):
+    if is_admin(user_id):
         await bot.set_my_commands(admin_commands, scope=types.BotCommandScopeChat(user_id))
     else:
         await bot.set_my_commands(user_commands, scope=types.BotCommandScopeChat(user_id))
@@ -144,7 +144,7 @@ async def start(message: types.Message):
 
 @dp.message_handler(commands=["broadcast"])
 async def broadcast(message: types.Message):
-    if str(message.from_user.id) != str(settings.ADMIN_ID):
+    if not is_admin(message.from_user.id):
         await message.answer("You are not admin!")
         return
     excepted_users = message.text.split(" ")
@@ -152,10 +152,7 @@ async def broadcast(message: types.Message):
     print(users)
     for user in users:
         try:
-            if (
-                str(user.telgram_id) == settings.ADMIN_ID
-                or str(user.telgram_id) in excepted_users
-            ):
+            if is_admin(user.telgram_id) or str(user.telgram_id) in excepted_users:
                 continue
             if message.reply_to_message:
                 await bot.copy_message(
@@ -170,7 +167,7 @@ async def broadcast(message: types.Message):
 
 @dp.message_handler(commands=["get_out_txt"])
 async def get_out_txt(message: types.Message):
-    if str(message.from_user.id) != str(settings.ADMIN_ID):
+    if not is_admin(message.from_user.id):
         await message.answer("You are not admin!")
         return
     with open("out.txt", "r") as f:
@@ -179,7 +176,7 @@ async def get_out_txt(message: types.Message):
 
 @dp.message_handler(commands=["stats"])
 async def stats(message: types.Message):
-    if str(message.from_user.id) != str(settings.ADMIN_ID):
+    if not is_admin(message.from_user.id):
         await message.answer("You are not admin!")
         return
     user_count = await UserModel.count()
@@ -195,7 +192,7 @@ async def stats(message: types.Message):
 
 @dp.message_handler(commands=["stats_graph"])
 async def stats_graph(message: types.Message):
-    if str(message.from_user.id) != str(settings.ADMIN_ID):
+    if not is_admin(message.from_user.id):
         await message.answer("You are not admin!")
         return
     # Aggregate requests per day
@@ -223,6 +220,10 @@ async def stats_graph(message: types.Message):
     await message.answer_photo(photo=buf, caption="Requests per day")
     buf.close()
     plt.close()
+
+
+def is_admin(user_id):
+    return str(user_id) == str(settings.ADMIN_ID)
 
 
 def main():

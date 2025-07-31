@@ -5,6 +5,7 @@ from aiogram import types
 from bot.core.api import Scraper
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.push import PushModel
+from bot.__main__ import is_admin
 
 from bot.core.models.user import SubscriptionModel, UserModel
 from bot.core.notificator import notify_subscribers
@@ -153,7 +154,7 @@ async def manual_application_update(message: types.Message):
         return
 
     # Set wait time based on admin status
-    _wait_time_minutes = 2 if getattr(_user, 'is_admin', False) else 60
+    _wait_time_minutes = 2 if is_admin(_user.telgram_id) else 60
 
     if _application.last_update > datetime.now() - timedelta(minutes=_wait_time_minutes):
 
