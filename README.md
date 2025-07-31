@@ -1,4 +1,3 @@
-
 # MFA Passport Dashboard bot
 <p align="center">
    <a href="https://t.me/passport_mfa_gov_ua_check_bot"><img src="https://telegram.org/img/t_logo.png?1"></a> <br>
@@ -62,13 +61,13 @@ alt="vtffijuUg5Y" width="240" height="180" border="10" /></a>
 ## Installation
 ### Clone Repo
 ```bash
-git clone https://github.com/denver-code/passport-status-bot
+git clone https://github.com/mrAlexZT/passport-status-bot
 cd passport-status-bot
 ```
 ### Environment variables
-Rename `example.env` to `.env` and fill it with your data.
+Rename `sample.env` to `.env` and fill it with your data.
 ```bash
-cp example.env .env
+cp sample.env .env
 vi .env
 ```
 ### Docker-compose
@@ -79,7 +78,7 @@ docker-compose up -d
 ```bash
 poetry install
 poetry shell
-python main.py
+python bot/__main__.py
 ```
 ### Edit in VSCode
 ```bash

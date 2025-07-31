@@ -102,7 +102,7 @@ async def time(message: types.Message):
 @dp.message_handler(commands=["version"])
 async def version(message: types.Message):
     await message.answer(
-        f"Bot version:\n*v{bot_version}*\n\nSource Code:\n[denver-code/passport-status-bot/{link.split('/')[-1]}]({link})\n\nCodename:\n*{codename}*",
+        f"Bot version:\n*v{bot_version}*\n\nSource Code:\n[mrAlexZT/passport-status-bot/{link.split('/')[-1]}]({link})\n\nCodename:\n*{codename}*",
         parse_mode="Markdown",
     )
 

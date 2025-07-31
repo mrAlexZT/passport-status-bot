@@ -40,8 +40,9 @@ async def policy(message: types.Message):
                 Ви можете видалити всі дані, пов'язані з вашим Telegram ID, надіславши /delete, або зв'язавшись з розробником  @operatorSilence. 
 
                 *Source Code*
+                Цей репозиторій є форком https://github.com/denver-code/passport-status-bot
                 Бот поширюється з відкритим вихідним кодом, ви можете переглянути його за посиланням:
-                https://github.com/denver-code/passport-status-bot
+                https://github.com/mrAlexZT/passport-status-bot
                 та перевірити все вищезазначене, або ж підняти свій власний бот з власним функціоналом.
             """,
         ),
