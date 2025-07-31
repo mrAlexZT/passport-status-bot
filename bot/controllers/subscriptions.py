@@ -199,8 +199,7 @@ async def manual_application_update(message: types.Message):
 
         await _message.edit_text(_msg_text, parse_mode="Markdown")
     else:
-        _msg_text = f"Статуси не змінилися. Остання зміна статусу:\n\n{_application.statuses[-1].status}"
-        await _message.edit_text(_msg_text, parse_mode="Markdown")
+        await _message.edit_text(f"Статуси не змінилися.\n\n/cabinet - персональний кабінет", parse_mode="Markdown")
 
     _application.statuses = _statuses
     _application.last_update = datetime.now()
