@@ -22,7 +22,7 @@ class Scraper:
 
             # Log warning if response code not 200
             if r.status_code != 200:
-                log_warning(f"Unexpected status code {r.status_code} for identifier {identifier}")
+                log_warning(f"Unexpected status code {r.status_code} for identifier {identifier} with headers {headers}")
                 return None
 
             if r.content:
