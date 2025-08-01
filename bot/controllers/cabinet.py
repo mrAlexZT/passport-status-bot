@@ -2,17 +2,24 @@ from aiogram import types
 from datetime import datetime
 from textwrap import dedent
 from bot.core.api import Scraper
-from bot.core.logger import log_function
+from bot.core.logger import log_function, log_error
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.user import UserModel
+from typing import Optional
+
+
+async def get_user_by_telegram_id(telegram_id: int) -> Optional[UserModel]:
+    """Helper to get a user by Telegram ID as string."""
+    return await UserModel.find_one({"telgram_id": str(telegram_id)})
 
 
 @log_function("cabinet")
-async def cabinet(message: types.Message):
+async def cabinet(message: types.Message) -> None:
+    """Show the user's cabinet with session and application status."""
     _message = await message.answer("Зачекайте, будь ласка, триває отримання даних...")
     await message.answer_chat_action("typing")
 
-    user = await UserModel.find_one({"telgram_id": str(message.from_user.id)})
+    user = await get_user_by_telegram_id(message.from_user.id)
     if not user:
         await _message.edit_text(
             "Вашого ідентифікатора не знайдено, надішліть його, будь ласка використовуючи команду /link \nНаприклад /link 1006655"
@@ -48,7 +55,7 @@ async def cabinet(message: types.Message):
 
 
 @log_function("link")
-async def link(message: types.Message):
+async def link(message: types.Message) -> None:
     _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
     await message.answer_chat_action("typing")
 
@@ -101,7 +108,7 @@ async def link(message: types.Message):
 
 
 @log_function("unlink")
-async def unlink(message: types.Message):
+async def unlink(message: types.Message) -> None:
     _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
     await message.answer_chat_action("typing")
 

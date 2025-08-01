@@ -34,10 +34,54 @@ dp = Dispatcher(
     storage=MemoryStorage(),
 )
 
+# --- Command Constants ---
+ADMIN_COMMANDS = [
+    types.BotCommand(command="/start", description="Почати роботу з ботом"),
+    types.BotCommand(command="/help", description="Допомога"),
+    types.BotCommand(command="/policy", description="Політика бота та конфіденційність"),
+    types.BotCommand(command="/cabinet", description="Персональний кабінет"),
+    types.BotCommand(command="/link", description="Прив'язати ідентифікатор"),
+    types.BotCommand(command="/unlink", description="Відв'язати ідентифікатор та видалити профіль"),
+    types.BotCommand(command="/subscribe", description="Підписатися на сповіщення"),
+    types.BotCommand(command="/unsubscribe", description="Відписатися від сповіщень"),
+    types.BotCommand(command="/subscriptions", description="Список підписок"),
+    types.BotCommand(command="/update", description="Оновити статус заявки вручну"),
+    types.BotCommand(command="/push", description="Підписатися на сповіщення через NTFY.sh"),
+    types.BotCommand(command="/dump", description="Отримати весь дамп доступних даних на ваші підписки"),
+    types.BotCommand(command="/ping", description="Перевірити чи працює бот"),
+    types.BotCommand(command="/time", description="Поточний час сервера"),
+    types.BotCommand(command="/version", description="Версія бота"),
+    types.BotCommand(command="/broadcast", description="Розсилка"),
+    types.BotCommand(command="/get_out_txt", description="Отримати out.txt"),
+    types.BotCommand(command="/stats", description="Статистика"),
+    types.BotCommand(command="/stats_graph", description="Графік запитів"),
+    types.BotCommand(command="/toggle_logging", description="Увімкнути/вимкнути логування"),
+    types.BotCommand(command="/logs", description="Переглянути логи"),
+]
+ADMIN_ONLY_COMMANDS = {"/broadcast", "/get_out_txt", "/stats", "/stats_graph", "/toggle_logging", "/logs"}
+
+
+def get_user_commands(is_admin: bool) -> list[types.BotCommand]:
+    """Return the list of commands for a user depending on admin status."""
+    if is_admin:
+        return ADMIN_COMMANDS
+    return [cmd for cmd in ADMIN_COMMANDS if cmd.command not in ADMIN_ONLY_COMMANDS]
+
 
 def is_admin(user_id: int) -> bool:
-    """Check if user is admin"""
+    """Check if user is admin."""
     return str(user_id) == str(settings.ADMIN_ID)
+
+
+def read_log_tail(log_path: Path, lines: int = 50) -> str:
+    """Read the last N lines from a log file, return as a string."""
+    if not log_path.exists():
+        return ""
+    with open(log_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+        split_lines = content.split('\n')
+        tail = split_lines[-lines:] if len(split_lines) > lines else split_lines
+        return '\n'.join(tail)
 
 
 @log_function("startup")
@@ -166,73 +210,31 @@ async def get_logs(message: types.Message):
         error_log = logs_dir / f"errors_{datetime.datetime.now().strftime('%Y%m%d')}.log"
 
         if today_log.exists():
-            with open(today_log, 'r', encoding='utf-8') as f:
-                content = f.read()
-                # Get last 50 lines
-                lines = content.split('\n')
-                recent_lines = lines[-50:] if len(lines) > 50 else lines
-                recent_content = '\n'.join(recent_lines)
+            recent_content = read_log_tail(today_log, 50)
+            if len(recent_content) > 4000:  # Telegram message limit
+                recent_content = recent_content[-4000:]
 
-                if len(recent_content) > 4000:  # Telegram message limit
-                    recent_content = recent_content[-4000:]
-
-                await message.answer(f"📊 Останні записи логів:\n\n```\n{recent_content}\n```", parse_mode="Markdown")
+            await message.answer(f"📊 Останні записи логів:\n\n```\n{recent_content}\n```", parse_mode="Markdown")
 
         if error_log.exists():
-            with open(error_log, 'r', encoding='utf-8') as f:
-                error_content = f.read()
-                if error_content.strip():
-                    error_lines = error_content.split('\n')
-                    recent_errors = error_lines[-20:] if len(error_lines) > 20 else error_lines
-                    error_text = '\n'.join(recent_errors)
+            error_content = read_log_tail(error_log, 20)
+            if error_content.strip():
+                if len(error_content) > 4000:
+                    error_content = error_content[-4000:]
 
-                    if len(error_text) > 4000:
-                        error_text = error_text[-4000:]
-
-                    await message.answer(f"🚨 Останні помилки:\n\n```\n{error_text}\n```", parse_mode="Markdown")
-                else:
-                    await message.answer("✅ Помилок не знайдено")
+                await message.answer(f"🚨 Останні помилки:\n\n```\n{error_content}\n```", parse_mode="Markdown")
+            else:
+                await message.answer("✅ Помилок не знайдено")
     except Exception as e:
         log_error("Get logs command failed", message.from_user.id, e)
         await message.answer("❌ Помилка при отриманні логів")
 
 
-async def set_user_commands(user_id):
-    """Optimize: cache admin status and set commands efficiently"""
+async def set_user_commands(user_id: int) -> None:
+    """Set the list of commands for a user depending on admin status."""
     try:
-        is_user_admin = is_admin(user_id)
-
-        admin_commands = [
-            types.BotCommand(command="/start", description="Почати роботу з ботом"),
-            types.BotCommand(command="/help", description="Допомога"),
-            types.BotCommand(command="/policy", description="Політика бота та конфіденційність"),
-            types.BotCommand(command="/cabinet", description="Персональний кабінет"),
-            types.BotCommand(command="/link", description="Прив'язати ідентифікатор"),
-            types.BotCommand(command="/unlink", description="Відв'язати ідентифікатор та видалити профіль"),
-            types.BotCommand(command="/subscribe", description="Підписатися на сповіщення"),
-            types.BotCommand(command="/unsubscribe", description="Відписатися від сповіщень"),
-            types.BotCommand(command="/subscriptions", description="Список підписок"),
-            types.BotCommand(command="/update", description="Оновити статус заявки вручну"),
-            types.BotCommand(command="/push", description="Підписатися на сповіщення через NTFY.sh"),
-            types.BotCommand(command="/dump", description="Отримати весь дамп доступних даних на ваші підписки"),
-            types.BotCommand(command="/ping", description="Перевірити чи працює бот"),
-            types.BotCommand(command="/time", description="Поточний час сервера"),
-            types.BotCommand(command="/version", description="Версія бота"),
-            types.BotCommand(command="/broadcast", description="Розсилка"),
-            types.BotCommand(command="/get_out_txt", description="Отримати out.txt"),
-            types.BotCommand(command="/stats", description="Статистика"),
-            types.BotCommand(command="/stats_graph", description="Графік запитів"),
-            types.BotCommand(command="/toggle_logging", description="Увімкнути/вимкнути логування"),
-            types.BotCommand(command="/logs", description="Переглянути логи"),
-        ]
-
-        if is_user_admin:
-            await bot.set_my_commands(admin_commands, scope=types.BotCommandScopeChat(user_id))
-        else:
-            # Filter out admin-only commands for regular users
-            admin_only_commands = {"/broadcast", "/get_out_txt", "/stats", "/stats_graph", "/toggle_logging", "/logs"}
-            user_commands = [cmd for cmd in admin_commands if cmd.command not in admin_only_commands]
-            await bot.set_my_commands(user_commands, scope=types.BotCommandScopeChat(user_id))
+        commands = get_user_commands(is_admin(user_id))
+        await bot.set_my_commands(commands, scope=types.BotCommandScopeChat(user_id))
     except Exception as e:
         log_error(f"Failed to set user commands for {user_id}", user_id, e)
 
@@ -248,57 +250,68 @@ async def start(message: types.Message):
         log_error("Start command failed", message.from_user.id, e)
 
 
+def filter_broadcast_users(users: list, excepted_users: set, admin_check) -> list:
+    """Filter out admin and excepted users from the broadcast list."""
+    return [user for user in users if getattr(user, 'telgram_id', None) and not admin_check(user.telgram_id) and str(user.telgram_id) not in excepted_users]
+
+async def send_broadcast_message(
+    users: list, message: types.Message, excepted_users: set
+) -> tuple[int, int, int]:
+    """Send broadcast message to users, return (success, blocked, error) counts."""
+    success_count = 0
+    blocked_count = 0
+    error_count = 0
+    for i, user in enumerate(users):
+        try:
+            await bot.copy_message(
+                user.telgram_id,
+                message.chat.id,
+                message.reply_to_message.message_id,
+            )
+            success_count += 1
+            if i > 0 and i % 30 == 0:
+                await asyncio.sleep(1)
+        except Exception as e:
+            err_str = str(e).lower()
+            if "blocked" in err_str or "forbidden" in err_str:
+                blocked_count += 1
+            else:
+                error_count += 1
+            log_error(f"Failed to send broadcast to user {getattr(user, 'telgram_id', 'unknown')}: {str(e)}")
+            with open("out_blocked.txt", "a", encoding='utf-8') as f:
+                print(f"User {getattr(user, 'telgram_id', 'unknown')} - {str(e)}", file=f)
+    return success_count, blocked_count, error_count
+
+def format_broadcast_result(success: int, blocked: int, error: int) -> str:
+    """Format the broadcast result message."""
+    return (
+        f"📢 Розсилка завершена:\n"
+        f"✅ Надіслано: {success}\n"
+        f"❌ Заблоковано: {blocked}\n"
+        f"⚠️ Помилки: {error}"
+    )
+
 @dp.message_handler(commands=["broadcast"])
 @log_function("broadcast_command")
-async def broadcast(message: types.Message):
+async def broadcast(message: types.Message) -> None:
+    """Admin command to broadcast a message to all users except admins and excluded."""
     if not is_admin(message.from_user.id):
         await message.answer("❌ Тільки адміністратор може користуватися цією командою!")
         return
-
     try:
         if not message.reply_to_message:
             await message.answer("❌ Відповідайте на повідомлення, яке потрібно розіслати")
             return
-
-        # Parse excluded users from command
         args = message.text.split()[1:] if len(message.text.split()) > 1 else []
-        excepted_users = set(args)  # Use set for O(1) lookup
+        excepted_users = set(args)
         users = await UserModel.all().to_list()
-        log_info(f"Broadcasting message to {len(users)} users, excluding {len(excepted_users)} users")
-        success_count = 0
-        blocked_count = 0
-        error_count = 0
+        filtered_users = filter_broadcast_users(users, excepted_users, is_admin)
+        log_info(f"Broadcasting message to {len(filtered_users)} users, excluding {len(excepted_users)} users")
         progress_msg = None
-        if len(users) > 100:
-            progress_msg = await message.answer(f"📢 Розпочинаю розсилку для {len(users)} користувачів...")
-        for i, user in enumerate(users):
-            try:
-                user_id_str = str(getattr(user, 'telgram_id', None))
-                if not user_id_str or is_admin(user.telgram_id) or user_id_str in excepted_users:
-                    continue
-                await bot.copy_message(
-                    user.telgram_id,
-                    message.chat.id,
-                    message.reply_to_message.message_id,
-                )
-                success_count += 1
-                if i > 0 and i % 30 == 0:
-                    await asyncio.sleep(1)
-            except Exception as e:
-                err_str = str(e).lower()
-                if "blocked" in err_str or "forbidden" in err_str:
-                    blocked_count += 1
-                else:
-                    error_count += 1
-                log_error(f"Failed to send broadcast to user {getattr(user, 'telgram_id', 'unknown')}: {str(e)}")
-                with open("out_blocked.txt", "a", encoding='utf-8') as f:
-                    print(f"User {getattr(user, 'telgram_id', 'unknown')} - {str(e)}", file=f)
-        result_text = (
-            f"📢 Розсилка завершена:\n"
-            f"✅ Надіслано: {success_count}\n"
-            f"❌ Заблоковано: {blocked_count}\n"
-            f"⚠️ Помилки: {error_count}"
-        )
+        if len(filtered_users) > 100:
+            progress_msg = await message.answer(f"📢 Розпочинаю розсилку для {len(filtered_users)} користувачів...")
+        success_count, blocked_count, error_count = await send_broadcast_message(filtered_users, message, excepted_users)
+        result_text = format_broadcast_result(success_count, blocked_count, error_count)
         if progress_msg:
             await progress_msg.edit_text(result_text)
         else:

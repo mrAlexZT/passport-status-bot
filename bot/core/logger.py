@@ -9,91 +9,75 @@ from bot.core.config import settings
 
 
 class GlobalLogger:
-    _instance = None
-    _initialized = False
+    _instance: Optional["GlobalLogger"] = None
+    _initialized: bool = False
 
-    def __new__(cls):
+    def __new__(cls) -> "GlobalLogger":
         if cls._instance is None:
-            cls._instance = super(GlobalLogger, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if not self._initialized:
-            self.enabled = True  # Default enabled, can be controlled by admin
-            self.logger = logging.getLogger("passport_bot")
+            self.enabled: bool = True  # Default enabled, can be controlled by admin
+            self.logger: logging.Logger = logging.getLogger("passport_bot")
             self.setup_logger()
             self._initialized = True
 
-    def setup_logger(self):
-        """Setup the logger with file and console handlers"""
+    def setup_logger(self) -> None:
+        """Setup the logger with file and console handlers."""
         self.logger.setLevel(logging.INFO)
-
-        # Clear existing handlers
-        self.logger.handlers.clear()
-
-        # Create logs directory if it doesn't exist
+        if self.logger.hasHandlers():
+            self.logger.handlers.clear()
         logs_dir = Path("logs")
         logs_dir.mkdir(exist_ok=True)
-
-        # File handler for all logs
         file_handler = logging.FileHandler(
             logs_dir / f"bot_{datetime.now().strftime('%Y%m%d')}.log",
             encoding='utf-8'
         )
         file_handler.setLevel(logging.INFO)
-
-        # Error file handler
         error_handler = logging.FileHandler(
             logs_dir / f"errors_{datetime.now().strftime('%Y%m%d')}.log",
             encoding='utf-8'
         )
         error_handler.setLevel(logging.ERROR)
-
-        # Console handler
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
-
-        # Formatter
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
         )
-
         file_handler.setFormatter(formatter)
         error_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
-
         self.logger.addHandler(file_handler)
         self.logger.addHandler(error_handler)
         self.logger.addHandler(console_handler)
 
     def is_admin(self, user_id: int) -> bool:
-        """Check if user is admin"""
+        """Check if user is admin."""
         return str(user_id) == str(settings.ADMIN_ID)
 
     def toggle_logging(self, user_id: int) -> str:
-        """Toggle logging on/off (admin only)"""
+        """Toggle logging on/off (admin only)."""
         if not self.is_admin(user_id):
             return "❌ Тільки адміністратор може керувати логуванням"
-
         self.enabled = not self.enabled
         status = "увімкнено" if self.enabled else "вимкнено"
         self.info(f"Logging toggled by admin {user_id}: {self.enabled}")
         return f"📊 Логування {status}"
 
-    def info(self, message: str, user_id: Optional[int] = None):
-        """Log info message"""
+    def info(self, message: str, user_id: Optional[int] = None) -> None:
+        """Log info message."""
         if not self.enabled:
             return
-
         log_msg = f"[User: {user_id}] {message}" if user_id else message
         self.logger.info(log_msg)
 
-    def error(self, message: str, user_id: Optional[int] = None, exception: Optional[Exception] = None):
-        """Log error message"""
+    def error(self, message: str, user_id: Optional[int] = None, exception: Optional[Exception] = None) -> None:
+        """Log error message."""
         if not self.enabled:
             return
-
         log_msg = f"[User: {user_id}] {message}" if user_id else message
         if exception:
             log_msg += f" | Exception: {str(exception)}"
