@@ -128,5 +128,6 @@ dmypy.json
 .pyre/
 
 .vscode
+.idea
 
 out.txt
