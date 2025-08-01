@@ -6,17 +6,27 @@ from aiogram.dispatcher.handler import CancelHandler, current_handler
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.utils.exceptions import Throttled
 
+from bot.core.logger import log_info, log_error
+
 
 class LoggerMiddleware(BaseMiddleware):
     async def on_process_message(self, message: types.Message, data: dict):
         """
         This handler is called when dispatcher receives a message
-
-        :param message:
-
         """
-        with open("out.txt", "a") as f:
-            print(
-                f"\nПрийшло повідомлення від {message.from_user.id} з текстом: {message}",
-                file=f,
-            )
+        try:
+            user_id = message.from_user.id
+            username = message.from_user.username or "No username"
+            message_text = message.text or message.caption or "[Media/File]"
+
+            # Log the message
+            log_info(f"Message from @{username}: {message_text}", user_id)
+
+            # Also keep the old file logging for backward compatibility
+            with open("out.txt", "a", encoding="utf-8") as f:
+                print(
+                    f"\nПрийшло повідомлення від {user_id} (@{username}) з текстом: {message_text}",
+                    file=f,
+                )
+        except Exception as e:
+            log_error("Error in LoggerMiddleware", getattr(message.from_user, "id", None), e)
