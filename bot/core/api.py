@@ -1,9 +1,12 @@
+# Standard library imports
 import os
-
-from fake_headers import Headers
-import cloudscraper
 from datetime import datetime
 
+# Third party imports
+import cloudscraper
+from fake_headers import Headers
+
+# Local application imports
 from bot.core.logger import log_error, log_warning, log_function
 
 

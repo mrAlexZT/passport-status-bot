@@ -44,21 +44,21 @@ async def notify_subscribers(
 
     for _subscription in _subscriptions:
         _push_subscription = await PushModel.find_one(
-            {"telgram_id": _subscription.telgram_id}
+            {"telegram_id": _subscription.telegram_id}
         )
         if _push_subscription:
             _message = f""
             for status in new_statuses:
                 _message += f"{status.status}\n"
             send_push(
-                f"MFA_{_subscription.telgram_id}_{_push_subscription.secret_id}",
+                f"MFA_{_subscription.telegram_id}_{_push_subscription.secret_id}",
                 f"Оновлення заявки #{target_application.session_id}",
                 _message,
             )
 
         try:
             await bot.send_message(
-                _subscription.telgram_id,
+                _subscription.telegram_id,
                 _msg_text,
                 parse_mode="Markdown",
             )

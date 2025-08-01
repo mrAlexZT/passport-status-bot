@@ -2,7 +2,7 @@ from beanie import Document, Indexed
 
 
 class UserModel(Document):
-    telgram_id: str
+    telegram_id: str
     session_id: str
 
     class Settings:
@@ -10,7 +10,7 @@ class UserModel(Document):
 
 
 class SubscriptionModel(Document):
-    telgram_id: str
+    telegram_id: str
     session_id: str
 
     class Settings:

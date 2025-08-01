@@ -1,30 +1,33 @@
-import datetime
-import matplotlib.pyplot as plt
-import io
+# Standard library imports
 import asyncio
+import datetime
+import io
 from collections import Counter
 from pathlib import Path
 
-from beanie import init_beanie
+# Third party imports
+import matplotlib.pyplot as plt
 from aiogram import types
-from aiogram.dispatcher import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from beanie import init_beanie
 
+# Local application imports
 from bot.bot_instance import bot, loop, version as bot_version, link, codename
+from bot.core.config import settings
 from bot.core.database import db
+from bot.core.logger import global_logger, log_function, log_error, log_info
 from bot.core.models.application import ApplicationModel
 from bot.core.models.push import PushModel
-from bot.core.models.user import SubscriptionModel, UserModel
 from bot.core.models.request_log import RequestLog
+from bot.core.models.user import SubscriptionModel, UserModel
+from bot.core.notify_admin import notify_admin
 from bot.core.scheduler import scheduler_job
 from bot.handlers import setup as handlers_setup
 from bot.middlewares.antiflood import ThrottlingMiddleware, rate_limit
 from bot.middlewares.debug import LoggerMiddleware
-from bot.core.config import settings
-from bot.core.notify_admin import notify_admin
-from bot.core.logger import global_logger, log_function, log_error, log_info
 
 scheduler = AsyncIOScheduler()
 
@@ -88,36 +91,8 @@ def read_log_tail(log_path: Path, lines: int = 50) -> str:
 async def startup(dp: Dispatcher):
     try:
         log_info("Bot startup initiated")
-        commands = [
-            types.BotCommand(command="/start", description="Почати роботу з ботом"),
-            types.BotCommand(command="/help", description="Допомога"),
-            types.BotCommand(
-                command="/policy", description="Політика бота та конфіденційність"
-            ),
-            types.BotCommand(command="/cabinet", description="Персональний кабінет"),
-            types.BotCommand(command="/link", description="Прив'язати ідентифікатор"),
-            types.BotCommand(
-                command="/unlink",
-                description="Відв'язати ідентифікатор та видалити профіль",
-            ),
-            types.BotCommand(command="/subscribe", description="Підписатися на сповіщення"),
-            types.BotCommand(
-                command="/unsubscribe", description="Відписатися від сповіщень"
-            ),
-            types.BotCommand(command="/subscriptions", description="Список підписок"),
-            types.BotCommand(command="/update", description="Оновити статус заявки вручну"),
-            types.BotCommand(
-                command="/push", description="Підписатися на сповіщення через NTFY.sh"
-            ),
-            types.BotCommand(
-                command="/dump",
-                description="Отримати весь дамп доступних даних на ваші підписки",
-            ),
-            types.BotCommand(command="/ping", description="Перевірити чи працює бот"),
-            types.BotCommand(command="/time", description="Поточний час сервера"),
-            types.BotCommand(command="/version", description="Версія бота"),
-        ]
-
+        # Use default user commands (non-admin) for initial setup
+        commands = get_user_commands(is_admin=False)
         await bot.set_my_commands(commands)
         log_info("Bot commands set successfully")
 
@@ -252,7 +227,7 @@ async def start(message: types.Message):
 
 def filter_broadcast_users(users: list, excepted_users: set, admin_check) -> list:
     """Filter out admin and excepted users from the broadcast list."""
-    return [user for user in users if getattr(user, 'telgram_id', None) and not admin_check(user.telgram_id) and str(user.telgram_id) not in excepted_users]
+    return [user for user in users if getattr(user, 'telegram_id', None) and not admin_check(user.telegram_id) and str(user.telegram_id) not in excepted_users]
 
 async def send_broadcast_message(
     users: list, message: types.Message, excepted_users: set
@@ -264,7 +239,7 @@ async def send_broadcast_message(
     for i, user in enumerate(users):
         try:
             await bot.copy_message(
-                user.telgram_id,
+                user.telegram_id,
                 message.chat.id,
                 message.reply_to_message.message_id,
             )
@@ -277,9 +252,9 @@ async def send_broadcast_message(
                 blocked_count += 1
             else:
                 error_count += 1
-            log_error(f"Failed to send broadcast to user {getattr(user, 'telgram_id', 'unknown')}: {str(e)}")
+            log_error(f"Failed to send broadcast to user {getattr(user, 'telegram_id', 'unknown')}: {str(e)}")
             with open("out_blocked.txt", "a", encoding='utf-8') as f:
-                print(f"User {getattr(user, 'telgram_id', 'unknown')} - {str(e)}", file=f)
+                print(f"User {getattr(user, 'telegram_id', 'unknown')} - {str(e)}", file=f)
     return success_count, blocked_count, error_count
 
 def format_broadcast_result(success: int, blocked: int, error: int) -> str:

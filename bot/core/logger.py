@@ -1,10 +1,12 @@
+# Standard library imports
 import logging
 import sys
 from datetime import datetime
+from functools import wraps
 from pathlib import Path
 from typing import Optional
-from functools import wraps
 
+# Local application imports
 from bot.core.config import settings
 
 
