@@ -2,6 +2,7 @@ from aiogram import types
 from datetime import datetime
 from textwrap import dedent
 from bot.core.api import Scraper
+from bot.core.logger import log_function
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.user import UserModel
 
