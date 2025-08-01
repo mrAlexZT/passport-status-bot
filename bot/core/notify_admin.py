@@ -1,7 +1,10 @@
 import asyncio
 from aiogram import Bot
 from bot.core.config import settings
+from bot.core.logger import log_function
 
+
+@log_function("notify_admin")
 async def notify_admin(text: str):
     admin_id = getattr(settings, "ADMIN_ID", None)
     token = getattr(settings, "TOKEN", None)

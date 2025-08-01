@@ -1,7 +1,10 @@
 from aiogram import types
 import textwrap
 
+from bot.core.logger import log_function
 
+
+@log_function("start")
 async def start(message: types.Message):
     await message.answer(
         textwrap.dedent(
@@ -18,6 +21,7 @@ async def start(message: types.Message):
     )
 
 
+@log_function("policy")
 async def policy(message: types.Message):
     await message.answer(
         textwrap.dedent(
@@ -50,6 +54,7 @@ async def policy(message: types.Message):
     )
 
 
+@log_function("help")
 async def help(message: types.Message):
     await message.answer(
         textwrap.dedent(

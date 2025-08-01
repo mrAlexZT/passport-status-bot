@@ -3,6 +3,7 @@ import secrets
 from textwrap import dedent
 from aiogram import types
 from bot.core.api import Scraper
+from bot.core.logger import log_function
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.push import PushModel
 from bot.__main__ import is_admin
@@ -11,6 +12,7 @@ from bot.core.models.user import SubscriptionModel, UserModel
 from bot.core.notificator import notify_subscribers
 
 
+@log_function("subscribe")
 async def subscribe(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
     await message.answer_chat_action("typing")
@@ -76,6 +78,7 @@ async def subscribe(message: types.Message):
     await _message.edit_text("Ви успішно підписані на сповіщення про зміну статусу")
 
 
+@log_function("unsuscribe")
 async def unsubscribe(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
     await message.answer_chat_action("typing")
@@ -104,6 +107,7 @@ async def unsubscribe(message: types.Message):
     )
 
 
+@log_function("subscriptions")
 async def subscriptions(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває отримання даних...")
     await message.answer_chat_action("typing")
@@ -136,6 +140,7 @@ async def subscriptions(message: types.Message):
     await _message.edit_text(_msg_text, parse_mode="Markdown")
 
 
+@log_function("manual_application_update")
 async def manual_application_update(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває отримання даних...")
     await message.answer_chat_action("typing")
@@ -207,6 +212,7 @@ async def manual_application_update(message: types.Message):
     await _application.save()
 
 
+@log_function("enable_push")
 async def enable_push(message: types.Message):
     _push = await PushModel.find_one({"telgram_id": str(message.from_user.id)})
     if _push:
@@ -240,6 +246,7 @@ async def enable_push(message: types.Message):
     )
 
 
+@log_function("dump_subscriptions")
 async def dump_subscriptions(message: types.Message):
     _subscriptions = await SubscriptionModel.find(
         {"telgram_id": str(message.from_user.id)}

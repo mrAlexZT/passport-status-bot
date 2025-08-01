@@ -6,6 +6,7 @@ from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.user import UserModel
 
 
+@log_function("cabinet")
 async def cabinet(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває отримання даних...")
     await message.answer_chat_action("typing")
@@ -45,6 +46,7 @@ async def cabinet(message: types.Message):
     await _message.edit_text(msg_text, parse_mode="Markdown")
 
 
+@log_function("link")
 async def link(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
     await message.answer_chat_action("typing")
@@ -97,6 +99,7 @@ async def link(message: types.Message):
     )
 
 
+@log_function("unlink")
 async def unlink(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
     await message.answer_chat_action("typing")

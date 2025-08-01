@@ -6,10 +6,11 @@ from aiogram.dispatcher.handler import CancelHandler, current_handler
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.utils.exceptions import Throttled
 
-from bot.core.logger import log_info, log_error
+from bot.core.logger import log_info, log_error, log_function
 
 
 class LoggerMiddleware(BaseMiddleware):
+    @log_function("setup_logger_middleware")
     async def on_process_message(self, message: types.Message, data: dict):
         """
         This handler is called when dispatcher receives a message

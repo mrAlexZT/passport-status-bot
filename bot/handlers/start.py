@@ -1,7 +1,9 @@
 from aiogram import Dispatcher
 from bot.controllers.start import start, policy, help
+from bot.core.logger import log_function
 
 
+@log_function("setup_start_handlers")
 def setup(dp: Dispatcher):
     dp.register_message_handler(start, commands=["start"], state="*")
     dp.register_message_handler(policy, commands=["policy"], state="*")

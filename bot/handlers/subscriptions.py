@@ -8,8 +8,10 @@ from bot.controllers.subscriptions import (
     enable_push,
     dump_subscriptions,
 )
+from bot.core.logger import log_function
 
 
+@log_function("setup_subscriptions_handlers")
 def setup(dp: Dispatcher):
     dp.register_message_handler(subscribe, commands=["subscribe"], state="*")
     dp.register_message_handler(unsubscribe, commands=["unsubscribe"], state="*")

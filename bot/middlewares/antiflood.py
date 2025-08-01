@@ -7,9 +7,11 @@ from aiogram.dispatcher.handler import CancelHandler, current_handler
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.utils.exceptions import Throttled
 
+from bot.core.logger import log_function
 from bot.core.models.request_log import RequestLog
 
 
+@log_function("rate_limit")
 def rate_limit(limit: int, key=None):
     """
 
@@ -24,6 +26,7 @@ def rate_limit(limit: int, key=None):
 
     """
 
+    @log_function("rate_limit_decorator")
     def decorator(func):
         setattr(func, "throttling_rate_limit", limit)
 
@@ -50,6 +53,7 @@ class ThrottlingMiddleware(BaseMiddleware):
 
         super(ThrottlingMiddleware, self).__init__()
 
+    @log_function("on_process_message")
     async def on_process_message(self, message: types.Message, data: dict):
         # Log every incoming message
         try:
@@ -102,6 +106,7 @@ class ThrottlingMiddleware(BaseMiddleware):
 
             raise CancelHandler()
 
+    @log_function("message_throttled")
     async def message_throttled(self, message: types.Message, throttled: Throttled):
         """
 

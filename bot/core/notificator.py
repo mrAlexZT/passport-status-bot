@@ -1,11 +1,14 @@
 from datetime import datetime
 import requests
+
+from bot.core.logger import log_function
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.push import PushModel
 from bot.core.models.user import SubscriptionModel
 from bot.bot_instance import bot
 
 
+@log_function("send_push")
 def send_push(user, title, message):
     requests.post(
         f"https://ntfy.sh/{user}",
@@ -17,6 +20,7 @@ def send_push(user, title, message):
     )
 
 
+@log_function("notify_subscribers")
 async def notify_subscribers(
     target_application: ApplicationModel = None, new_statuses: list[StatusModel] = None
 ):

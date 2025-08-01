@@ -4,13 +4,14 @@ from fake_headers import Headers
 import cloudscraper
 from datetime import datetime
 
-from bot.core.logger import log_error, log_warning
+from bot.core.logger import log_error, log_warning, log_function
 
 
 class Scraper:
     def __init__(self):
         self.scraper = cloudscraper.create_scraper()
 
+    @log_function("check")
     def check(self, identifier, retrive_all=False):
         try:
             headers = Headers().generate()

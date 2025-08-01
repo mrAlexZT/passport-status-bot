@@ -1,9 +1,11 @@
 from datetime import datetime
 from bot.core.api import Scraper
+from bot.core.logger import log_function
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.notificator import notify_subscribers
 
 
+@log_function("scheduler_job")
 async def scheduler_job():
     _applications = await ApplicationModel.find({}).to_list()
 

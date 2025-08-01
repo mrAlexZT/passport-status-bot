@@ -6,8 +6,10 @@ import numpy as np
 from qreader import QReader
 import cv2
 from bot.core.api import Scraper
+from bot.core.logger import log_function
 
 
+@log_function("custom_check")
 async def custom_check(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
     await message.answer_chat_action("typing")
@@ -31,6 +33,7 @@ async def custom_check(message: types.Message):
 
 
 # image qr recognition
+@log_function("image_qr_recognition")
 async def image_qr_recognition(message: types.Message):
     _message = await message.answer("Зачекайте, будь ласка, триває аналіз фото...")
     await message.answer_chat_action("typing")
