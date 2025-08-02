@@ -15,7 +15,10 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from beanie import init_beanie
 
 # Local application imports
-from bot.bot_instance import bot, loop, version as bot_version, link, codename
+from bot.bot_instance import (
+    bot, loop, version as bot_version, link,
+    update_version
+)
 from bot.core.config import settings
 from bot.core.database import db
 from bot.core.logger import global_logger, log_function, log_error, log_info
@@ -151,13 +154,29 @@ async def time(message: types.Message):
 @dp.message_handler(commands=["version"])
 @log_function("version_command")
 async def version(message: types.Message):
+    """Show bot version information."""
     try:
-        await message.answer(
-            f"Bot version:\n*v{bot_version}*\n\nSource Code:\n[mrAlexZT/passport-status-bot/{link.split('/')[-1]}]({link})\n\nCodename:\n*{codename}*",
+        # Show progress while checking version
+        _message = await message.answer("🔄 Перевірка версії...")
+        
+        # Force version check
+        await update_version()
+        
+        # Format version info
+        if bot_version == "N/A":
+            version_text = "❌ *Не вдалося отримати інформацію про версію*"
+        else:
+            version_text = f"*v{bot_version}*"
+            
+        await _message.edit_text(
+            f"🤖 Версія бота: {version_text}\n"
+            f"📦 [Завантажити останню версію]({link})",
             parse_mode="Markdown",
+            disable_web_page_preview=True
         )
     except Exception as e:
         log_error("Version command failed", message.from_user.id, e)
+        await message.answer("❌ Помилка при отриманні інформації про версію")
 
 
 @dp.message_handler(commands=["toggle_logging"])
