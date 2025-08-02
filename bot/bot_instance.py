@@ -14,24 +14,52 @@ DEFAULT_LINK = "https://github.com/mrAlexZT/passport-status-bot/releases/latest"
 codename = "Silence"
 
 async def get_latest_release():
-    """Fetch latest release info from GitHub API."""
+    """
+    Fetch latest release info from GitHub API.
+    Returns tuple of (version, link, is_prerelease).
+    """
     try:
         async with aiohttp.ClientSession() as session:
+            # First try to get all releases to find latest stable
             async with session.get(
-                "https://api.github.com/repos/mrAlexZT/passport-status-bot/releases/latest",
+                "https://api.github.com/repos/mrAlexZT/passport-status-bot/releases",
                 headers={"Accept": "application/vnd.github+json"}
             ) as response:
                 if response.status == 200:
-                    data = await response.json()
-                    return data["tag_name"].lstrip("v"), data["html_url"]
+                    releases = await response.json()
+                    
+                    # Filter out drafts and find latest stable release
+                    stable_releases = [
+                        r for r in releases 
+                        if not r["draft"] and not r["prerelease"]
+                    ]
+                    
+                    if stable_releases:
+                        latest = stable_releases[0]  # Releases are sorted by date
+                        version = latest["tag_name"].lstrip("v")
+                        link = latest["html_url"]
+                        return version, link
+                    
+                    # If no stable releases found, try to get any release
+                    if releases:
+                        latest = releases[0]
+                        version = latest["tag_name"].lstrip("v")
+                        link = latest["html_url"]
+                        return version, link
+                    
+                    log_error(
+                        "No releases found",
+                        None,
+                        "Repository has no releases"
+                    )
                 else:
                     log_error(
-                        "Failed to fetch release info",
+                        "Failed to fetch releases",
                         None,
-                        f"Status: {response.status}"
+                        f"Status: {response.status}, Response: {await response.text()}"
                     )
     except Exception as e:
-        log_error("Failed to fetch release info", None, e)
+        log_error("Failed to fetch release info", None, str(e))
     
     return DEFAULT_VERSION, DEFAULT_LINK
 
@@ -43,7 +71,15 @@ async def update_version():
     """Update version and link from GitHub."""
     global version, link
     v, l = await get_latest_release()
-    version, link = v, l
+    if v != "N/A":  # Only update if we got a valid version
+        version, link = v, l
 
-# Schedule initial version update
-loop.create_task(update_version())
+async def version_check_loop():
+    """Periodically check for new versions."""
+    while True:
+        await update_version()
+        await asyncio.sleep(3600)  # Check every hour
+
+# Schedule version updates
+loop.create_task(update_version())  # Initial update
+loop.create_task(version_check_loop())  # Periodic updates
