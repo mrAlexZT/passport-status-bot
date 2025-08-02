@@ -84,7 +84,9 @@ def get_help_text(is_admin: bool) -> str:
     
     # Add all available commands for the user
     for cmd in commands:
-        help_lines.append(f"{cmd.command} — {cmd.description}")
+        # Escape underscores in command names for proper Markdown display
+        escaped_command = cmd.command.replace("_", "\\_")
+        help_lines.append(f"{escaped_command} — {cmd.description}")
     
     if is_admin:
         help_lines.append("")
