@@ -22,6 +22,7 @@ from bot.core.logger import global_logger, log_function, log_error, log_info
 from bot.core.models.application import ApplicationModel
 from bot.core.models.push import PushModel
 from bot.core.models.request_log import RequestLog
+from bot.core.utils import admin_permission_check, get_application_by_session_id
 from bot.core.models.user import SubscriptionModel, UserModel
 from bot.core.notify_admin import notify_admin
 from bot.core.scheduler import scheduler_job
@@ -171,8 +172,7 @@ async def toggle_logging(message: types.Message):
 @dp.message_handler(commands=["logs"])
 async def get_logs(message: types.Message):
     """Admin command to get recent logs"""
-    if not is_admin(message.from_user.id):
-        await message.answer("❌ Тільки адміністратор може переглядати логи")
+    if not await admin_permission_check(message):
         return
 
     try:
@@ -181,8 +181,9 @@ async def get_logs(message: types.Message):
             await message.answer("📁 Директорія з логами не знайдена")
             return
 
-        today_log = logs_dir / f"bot_{datetime.datetime.now().strftime('%Y%m%d')}.log"
-        error_log = logs_dir / f"errors_{datetime.datetime.now().strftime('%Y%m%d')}.log"
+        from bot.core.logger import get_log_filename
+        today_log = logs_dir / get_log_filename("bot")
+        error_log = logs_dir / get_log_filename("errors")
 
         if today_log.exists():
             recent_content = read_log_tail(today_log, 50)
@@ -270,8 +271,7 @@ def format_broadcast_result(success: int, blocked: int, error: int) -> str:
 @log_function("broadcast_command")
 async def broadcast(message: types.Message) -> None:
     """Admin command to broadcast a message to all users except admins and excluded."""
-    if not is_admin(message.from_user.id):
-        await message.answer("❌ Тільки адміністратор може користуватися цією командою!")
+    if not await admin_permission_check(message):
         return
     try:
         if not message.reply_to_message:
@@ -300,8 +300,7 @@ async def broadcast(message: types.Message) -> None:
 @dp.message_handler(commands=["get_out_txt"])
 @log_function("get_out_txt_command")
 async def get_out_txt(message: types.Message):
-    if not is_admin(message.from_user.id):
-        await message.answer("❌ Тільки адміністратор може користуватися цією командою!")
+    if not await admin_permission_check(message):
         return
     try:
         with open("out.txt", "r", encoding='utf-8') as f:
@@ -316,8 +315,7 @@ async def get_out_txt(message: types.Message):
 @dp.message_handler(commands=["stats"])
 @log_function("stats_command")
 async def stats(message: types.Message):
-    if not is_admin(message.from_user.id):
-        await message.answer("❌ Тільки адміністратор може користуватися цією командою!")
+    if not await admin_permission_check(message):
         return
     try:
         # Use concurrent queries for better performance
@@ -332,7 +330,8 @@ async def stats(message: types.Message):
         # Count errors from logs if available
         error_count = 0
         try:
-            error_log = Path("logs") / f"errors_{datetime.datetime.now().strftime('%Y%m%d')}.log"
+            from bot.core.logger import get_log_filename
+            error_log = Path("logs") / get_log_filename("errors")
             if error_log.exists():
                 with open(error_log, 'r', encoding='utf-8') as f:
                     error_count = sum(1 for line in f if line.strip())
@@ -354,8 +353,7 @@ async def stats(message: types.Message):
 @dp.message_handler(commands=["stats_graph"])
 @log_function("stats_graph_command")
 async def stats_graph(message: types.Message):
-    if not is_admin(message.from_user.id):
-        await message.answer("❌ Тільки адміністратор може користуватися цією командою!")
+    if not await admin_permission_check(message):
         return
     try:
         # Show progress for potentially slow operation

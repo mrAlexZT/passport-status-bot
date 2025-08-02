@@ -11,6 +11,7 @@ from bot.core.constants import *
 from bot.core.logger import log_error
 from bot.core.models.user import UserModel
 from bot.core.models.application import ApplicationModel, StatusModel
+from bot.core.models.push import PushModel
 
 
 def get_user_id_str(message: types.Message) -> str:
@@ -33,9 +34,22 @@ async def get_user_by_message(message: types.Message) -> Optional[UserModel]:
     return await UserModel.find_one({"telegram_id": get_user_id_str(message)})
 
 
-async def get_push_by_message(message: types.Message) -> Optional:
+async def get_application_by_session_id(session_id: str) -> Optional[ApplicationModel]:
+    """Get application by session ID - eliminates duplication."""
+    return await ApplicationModel.find_one({"session_id": session_id})
+
+
+async def admin_permission_check(message: types.Message) -> bool:
+    """Check admin permission and send error message if not admin. Returns True if admin."""
+    from bot.__main__ import is_admin
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ Тільки адміністратор може користуватися цією командою!")
+        return False
+    return True
+
+
+async def get_push_by_message(message: types.Message) -> Optional[PushModel]:
     """Get push model by message - eliminates duplication."""
-    from bot.core.models.push import PushModel
     return await PushModel.find_one({"telegram_id": get_user_id_str(message)})
 
 

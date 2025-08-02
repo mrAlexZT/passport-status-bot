@@ -17,6 +17,7 @@ from bot.core.models.push import PushModel
 from bot.core.models.user import SubscriptionModel, UserModel
 from bot.core.notificator import notify_subscribers
 from bot.core.utils import (
+    get_application_by_session_id,
     _format_status_with_custom_template,
     check_subscription_limit,
     create_status_models_from_api_response,
@@ -46,7 +47,7 @@ async def _create_subscription_for_session(user_id: int, session_id: str) -> boo
         return False  # Already subscribed
     
     # Create application record if it doesn't exist
-    application = await ApplicationModel.find_one({"session_id": session_id})
+    application = await get_application_by_session_id(session_id)
     if not application:
         scraper = Scraper()
         status_data = scraper.check(session_id, retrive_all=True)
@@ -166,9 +167,7 @@ async def manual_application_update(message: types.Message) -> None:
     
     try:
         _user = await get_user_by_message(message)
-        _application = await ApplicationModel.find_one(
-            {"session_id": _user.session_id} if _user else {}
-        )
+        _application = await get_application_by_session_id(_user.session_id) if _user else None
         if not _user or not _application:
             await safe_edit_message(_message, NOT_FOUND_IDENTIFIER_OR_APPLICATION)
             return

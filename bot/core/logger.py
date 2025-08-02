@@ -16,6 +16,12 @@ except ImportError:
     CancelHandler = None
 
 
+def get_log_filename(log_type: str = "bot") -> str:
+    """Generate log filename with current date - eliminates duplication."""
+    date_str = datetime.now().strftime('%Y%m%d')
+    return f"{log_type}_{date_str}.log"
+
+
 class GlobalLogger:
     _instance: Optional["GlobalLogger"] = None
     _initialized: bool = False
@@ -40,12 +46,12 @@ class GlobalLogger:
         logs_dir = Path("logs")
         logs_dir.mkdir(exist_ok=True)
         file_handler = logging.FileHandler(
-            logs_dir / f"bot_{datetime.now().strftime('%Y%m%d')}.log",
+            logs_dir / get_log_filename("bot"),
             encoding='utf-8'
         )
         file_handler.setLevel(logging.INFO)
         error_handler = logging.FileHandler(
-            logs_dir / f"errors_{datetime.now().strftime('%Y%m%d')}.log",
+            logs_dir / get_log_filename("errors"),
             encoding='utf-8'
         )
         error_handler.setLevel(logging.ERROR)
@@ -63,8 +69,9 @@ class GlobalLogger:
         self.logger.addHandler(console_handler)
 
     def is_admin(self, user_id: int) -> bool:
-        """Check if user is admin."""
-        return str(user_id) == str(settings.ADMIN_ID)
+        """Check if user is admin - delegates to main is_admin function."""
+        from bot.__main__ import is_admin
+        return is_admin(user_id)
 
     def toggle_logging(self, user_id: int) -> str:
         """Toggle logging on/off (admin only)."""

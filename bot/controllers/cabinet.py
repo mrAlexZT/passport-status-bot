@@ -13,6 +13,7 @@ from bot.core.logger import log_function, log_error
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.user import UserModel
 from bot.core.utils import (
+    get_application_by_session_id,
     create_status_models_from_api_response,
     format_application_statuses_section,
     get_user_by_message,
@@ -44,7 +45,7 @@ async def cabinet(message: types.Message) -> None:
 
     await safe_edit_message(_message, initial_message, parse_mode="Markdown")
 
-    application = await ApplicationModel.find_one({"session_id": user.session_id})
+    application = await get_application_by_session_id(user.session_id)
     if not application:
         return
 
@@ -89,7 +90,7 @@ async def link(message: types.Message) -> None:
         return
 
     # Create or update application
-    _application = await ApplicationModel.find_one({"session_id": session_id})
+    _application = await get_application_by_session_id(session_id)
     if not _application:
         _application = ApplicationModel(
             session_id=session_id,
