@@ -7,6 +7,7 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.utils.exceptions import Throttled
 
 from bot.core.logger import log_info, log_error, log_function
+from bot.core.utils import get_safe_user_id
 
 
 class LoggerMiddleware(BaseMiddleware):
@@ -30,4 +31,4 @@ class LoggerMiddleware(BaseMiddleware):
                     file=f,
                 )
         except Exception as e:
-            log_error("Error in LoggerMiddleware", getattr(message.from_user, "id", None), e)
+            log_error("Error in LoggerMiddleware", get_safe_user_id(message), e)

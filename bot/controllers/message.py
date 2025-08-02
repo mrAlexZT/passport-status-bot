@@ -12,7 +12,13 @@ from qreader import QReader
 from bot.core.api import Scraper
 from bot.core.constants import *
 from bot.core.logger import log_function, log_error
-from bot.core.utils import format_status_list, safe_answer_message, safe_edit_message
+from bot.core.utils import (
+    format_status_list,
+    log_handler_error,
+    safe_answer_message,
+    safe_edit_message,
+    show_typing_action,
+)
 
 
 @log_function("custom_check")
@@ -22,7 +28,7 @@ async def custom_check(message: types.Message) -> None:
     if not _message:
         return
     
-    await message.answer_chat_action("typing")
+    await show_typing_action(message)
     try:
         scraper = Scraper()
         status_data = scraper.check(message.text, retrive_all=True)
@@ -37,7 +43,7 @@ async def custom_check(message: types.Message) -> None:
         
         await safe_edit_message(_message, formatted_text, parse_mode="Markdown")
     except Exception as e:
-        log_error("custom_check failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("custom_check", message, e)
         await safe_edit_message(_message, ERROR_GENERIC_DETAILED.format(operation="перевірці"))
 
 
@@ -48,7 +54,7 @@ async def image_qr_recognition(message: types.Message) -> None:
     if not _message:
         return
     
-    await message.answer_chat_action("typing")
+    await show_typing_action(message)
     try:
         file = await message.bot.get_file(message.photo[-1].file_id)
         download_file = await message.bot.download_file(file.file_path)
@@ -61,5 +67,5 @@ async def image_qr_recognition(message: types.Message) -> None:
             return
         await safe_edit_message(_message, QR_RECOGNIZED.format(code=decoded), parse_mode="Markdown")
     except Exception as e:
-        log_error("image_qr_recognition failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("image_qr_recognition", message, e)
         await safe_edit_message(_message, ERROR_QR_RECOGNITION)

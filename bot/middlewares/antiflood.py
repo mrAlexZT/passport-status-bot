@@ -12,6 +12,7 @@ from aiogram.utils.exceptions import Throttled
 # Local application imports
 from bot.core.logger import log_function
 from bot.core.models.request_log import RequestLog
+from bot.core.utils import get_user_id_str
 
 
 @log_function("rate_limit")
@@ -60,7 +61,7 @@ class ThrottlingMiddleware(BaseMiddleware):
     async def on_process_message(self, message: types.Message, data: dict):
         # Log every incoming message
         try:
-            await RequestLog(telegram_id=str(message.from_user.id), timestamp=datetime.utcnow()).insert()
+            await RequestLog(telegram_id=get_user_id_str(message), timestamp=datetime.utcnow()).insert()
         except Exception:
             pass
 

@@ -17,16 +17,21 @@ from bot.core.models.push import PushModel
 from bot.core.models.user import SubscriptionModel, UserModel
 from bot.core.notificator import notify_subscribers
 from bot.core.utils import (
+    _format_status_with_custom_template,
     check_subscription_limit,
     create_status_models_from_api_response,
     format_new_status_message,
     format_subscription_list,
-    get_user_by_telegram_id,
+    get_push_by_message,
+    get_user_by_message,
+    get_user_id_str,
     handle_generic_error,
     handle_invalid_session_id,
     handle_scraper_error,
+    log_handler_error,
     process_status_update,
     safe_edit_message,
+    safe_edit_message_markdown,
     show_typing_and_wait_message,
 )
 
@@ -100,7 +105,7 @@ async def subscribe(message: types.Message) -> None:
             await safe_edit_message(_message, SUBSCRIPTION_CREATE_FAILED)
     
     except Exception as e:
-        log_error("subscribe failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("subscribe", message, e)
         await handle_generic_error(_message, "підписці")
 
 
@@ -119,7 +124,7 @@ async def unsubscribe(message: types.Message) -> None:
         
         session_id = parts[1]
         subscription = await SubscriptionModel.find_one(
-            {"telegram_id": str(message.from_user.id), "session_id": session_id}
+            {"telegram_id": get_user_id_str(message), "session_id": session_id}
         )
         
         if not subscription:
@@ -129,7 +134,7 @@ async def unsubscribe(message: types.Message) -> None:
         await subscription.delete()
         await safe_edit_message(_message, SUCCESS_UNSUBSCRIPTION)
     except Exception as e:
-        log_error("unsubscribe failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("unsubscribe", message, e)
         await handle_generic_error(_message, "відписці")
 
 
@@ -142,13 +147,13 @@ async def subscriptions(message: types.Message) -> None:
     
     try:
         user_subscriptions = await SubscriptionModel.find(
-            {"telegram_id": str(message.from_user.id)}
+            {"telegram_id": get_user_id_str(message)}
         ).to_list()
         
         msg_text = format_subscription_list(user_subscriptions, include_count=True)
-        await safe_edit_message(_message, msg_text, parse_mode="Markdown")
+        await safe_edit_message_markdown(_message, msg_text)
     except Exception as e:
-        log_error("subscriptions failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("subscriptions", message, e)
         await handle_generic_error(_message, "отриманні підписок")
 
 
@@ -160,7 +165,7 @@ async def manual_application_update(message: types.Message) -> None:
         return
     
     try:
-        _user = await get_user_by_telegram_id(message.from_user.id)
+        _user = await get_user_by_message(message)
         _application = await ApplicationModel.find_one(
             {"session_id": _user.session_id} if _user else {}
         )
@@ -189,16 +194,16 @@ async def manual_application_update(message: types.Message) -> None:
         else:
             # Format the new status message
             msg_text = format_new_status_message(_user.session_id, new_statuses)
-            await safe_edit_message(_message, msg_text, parse_mode="Markdown")
+            await safe_edit_message_markdown(_message, msg_text)
 
     except Exception as e:
-        log_error("manual_application_update failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("manual_application_update", message, e)
         await safe_edit_message(_message, ERROR_APPLICATION_UPDATE)
 
 
 @log_function("enable_push")
 async def enable_push(message: types.Message):
-    _push = await PushModel.find_one({"telegram_id": str(message.from_user.id)})
+    _push = await get_push_by_message(message)
     if _push:
         await message.answer(
             SUBSCRIPTION_ALREADY_EXISTS.format(
@@ -213,7 +218,7 @@ async def enable_push(message: types.Message):
     _secret_id = secrets.token_hex(16)
 
     _push = PushModel(
-        telegram_id=str(message.from_user.id),
+        telegram_id=get_user_id_str(message),
         secret_id=_secret_id,
     )
     await _push.insert()
@@ -230,7 +235,7 @@ async def enable_push(message: types.Message):
 @log_function("dump_subscriptions")
 async def dump_subscriptions(message: types.Message):
     _subscriptions = await SubscriptionModel.find(
-        {"telegram_id": str(message.from_user.id)}
+        {"telegram_id": get_user_id_str(message)}
     ).to_list()
 
     if not _subscriptions:
@@ -257,10 +262,7 @@ async def dump_subscriptions(message: types.Message):
         if not _application:
             continue
         for j, st in enumerate(_application.statuses):
-            _date = datetime.fromtimestamp(int(st.date) / 1000).strftime(
-                "%Y-%m-%d %H:%M"
-            )
-            _msg_text += f"     *{st.status}* \n          _{_date}_\n"
+            _msg_text += _format_status_with_custom_template(st, "     *{status}* \n          _{date}_\n")
 
     _msg_text += f"\n{SUBSCRIPTION_COUNT_FORMAT.format(count=len(_subscriptions))}"
 

@@ -5,6 +5,7 @@ from bot.core.logger import log_function
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.push import PushModel
 from bot.core.models.user import SubscriptionModel
+from bot.core.utils import format_new_status_message
 from bot.bot_instance import bot
 
 
@@ -34,13 +35,8 @@ async def notify_subscribers(
     if not _subscriptions:
         return
 
-    _msg_text = f"""
-    Ми помітили зміну статусу заявки *#{target_application.session_id}:*
-    """
-
-    for i, s in enumerate(new_statuses):
-        _date = datetime.fromtimestamp(int(s.date) / 1000).strftime("%Y-%m-%d %H:%M")
-        _msg_text += f"{i+1}. *{s.status}* \n_{_date}_\n\n"
+    # Use centralized status message formatting
+    _msg_text = format_new_status_message(target_application.session_id, new_statuses)
 
     for _subscription in _subscriptions:
         _push_subscription = await PushModel.find_one(

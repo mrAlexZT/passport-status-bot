@@ -7,6 +7,7 @@ from aiogram import types
 # Local application imports
 from bot.core.constants import ERROR_GENERIC
 from bot.core.logger import log_function, log_error
+from bot.core.utils import log_handler_error
 
 
 @log_function("start")
@@ -27,7 +28,7 @@ async def start(message: types.Message) -> None:
             parse_mode="Markdown",
         )
     except Exception as e:
-        log_error("start handler failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("start handler", message, e)
         await message.answer(ERROR_GENERIC)
 
 
@@ -65,7 +66,7 @@ async def policy(message: types.Message) -> None:
             parse_mode="Markdown",
         )
     except Exception as e:
-        log_error("policy handler failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("policy handler", message, e)
         await message.answer(ERROR_GENERIC)
 
 
@@ -95,5 +96,5 @@ async def help(message: types.Message) -> None:
             parse_mode="Markdown",
         )
     except Exception as e:
-        log_error("help handler failed", getattr(message.from_user, 'id', None), e)
+        log_handler_error("help handler", message, e)
         await message.answer(ERROR_GENERIC)

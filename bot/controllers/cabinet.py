@@ -15,7 +15,8 @@ from bot.core.models.user import UserModel
 from bot.core.utils import (
     create_status_models_from_api_response,
     format_application_statuses_section,
-    get_user_by_telegram_id,
+    get_user_by_message,
+    get_user_id_str,
     handle_invalid_session_id,
     handle_scraper_error,
     handle_user_not_found,
@@ -31,7 +32,7 @@ async def cabinet(message: types.Message) -> None:
     if not _message:
         return
 
-    user = await get_user_by_telegram_id(message.from_user.id)
+    user = await get_user_by_message(message)
     if not user:
         await handle_user_not_found(_message)
         return
@@ -71,7 +72,7 @@ async def link(message: types.Message) -> None:
     session_id = parts[1]
 
     # Check if user is already linked
-    _user = await UserModel.find_one({"telegram_id": str(message.from_user.id)})
+    _user = await get_user_by_message(message)
     if _user and _user.session_id:
         await safe_edit_message(
             _message,
@@ -98,7 +99,7 @@ async def link(message: types.Message) -> None:
         await _application.insert()
 
     # Create user record
-    _user = UserModel(telegram_id=str(message.from_user.id), session_id=session_id)
+    _user = UserModel(telegram_id=get_user_id_str(message), session_id=session_id)
     await _user.insert()
 
     await safe_edit_message(
@@ -113,7 +114,7 @@ async def unlink(message: types.Message) -> None:
     if not _message:
         return
 
-    _user = await get_user_by_telegram_id(message.from_user.id)
+    _user = await get_user_by_message(message)
     if not _user:
         await handle_user_not_found(_message)
         return

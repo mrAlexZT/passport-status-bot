@@ -13,9 +13,30 @@ from bot.core.models.user import UserModel
 from bot.core.models.application import ApplicationModel, StatusModel
 
 
+def get_user_id_str(message: types.Message) -> str:
+    """Convert message user ID to string - eliminates duplication."""
+    return str(message.from_user.id)
+
+
+def get_safe_user_id(message: types.Message) -> Optional[int]:
+    """Safely extract user ID from message - eliminates duplication."""
+    return getattr(message.from_user, 'id', None)
+
+
 async def get_user_by_telegram_id(telegram_id: int) -> Optional[UserModel]:
     """Helper to get a user by Telegram ID as string."""
     return await UserModel.find_one({"telegram_id": str(telegram_id)})
+
+
+async def get_user_by_message(message: types.Message) -> Optional[UserModel]:
+    """Get user by message - eliminates duplication."""
+    return await UserModel.find_one({"telegram_id": get_user_id_str(message)})
+
+
+async def get_push_by_message(message: types.Message) -> Optional:
+    """Get push model by message - eliminates duplication."""
+    from bot.core.models.push import PushModel
+    return await PushModel.find_one({"telegram_id": get_user_id_str(message)})
 
 
 async def safe_edit_message(message: types.Message, text: str, parse_mode: str = None) -> None:
@@ -40,6 +61,23 @@ async def safe_answer_message(message: types.Message, text: str, parse_mode: str
         return None
 
 
+def _get_formatted_date(status: StatusModel) -> str:
+    """Extract formatted date from status - single source of truth for date formatting."""
+    return datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")
+
+
+def _format_single_status(status: StatusModel, index: int) -> str:
+    """Helper function to format a single status entry - eliminates duplication."""
+    date = _get_formatted_date(status)
+    return f"{index}. *{status.status}* _{date}_\n\n"
+
+
+def _format_status_with_custom_template(status: StatusModel, template: str) -> str:
+    """Helper function to format a status with custom template - eliminates datetime duplication."""
+    date = _get_formatted_date(status)
+    return template.format(status=status.status, date=date)
+
+
 def format_status_list(statuses: List[StatusModel], session_id: str = None) -> str:
     """Format a list of statuses into a readable text."""
     if not statuses:
@@ -49,8 +87,7 @@ def format_status_list(statuses: List[StatusModel], session_id: str = None) -> s
     msg_text = header
     
     for i, status in enumerate(statuses, start=1):
-        date = datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")
-        msg_text += f"{i}. *{status.status}* \n_{date}_\n\n"
+        msg_text += _format_single_status(status, i)
     
     return msg_text
 
@@ -62,8 +99,7 @@ def format_application_statuses_section(statuses: List[StatusModel]) -> str:
     
     msg_text = HEADER_APPLICATION_STATUSES
     for i, status in enumerate(statuses, start=1):
-        date = datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")
-        msg_text += f"{i}. *{status.status}* _{date}_\n\n"
+        msg_text += _format_single_status(status, i)
     
     return msg_text
 
@@ -119,12 +155,36 @@ def format_subscription_list(subscriptions: List, include_count: bool = True) ->
     return msg_text
 
 
+async def show_typing_action(message: types.Message) -> None:
+    """Show typing action - eliminates duplication."""
+    await message.answer_chat_action("typing")
+
+
 async def show_typing_and_wait_message(message: types.Message, wait_text: str = None) -> Optional[types.Message]:
     """Show typing indicator and send a wait message."""
     if wait_text is None:
         wait_text = WAIT_CHECKING
-    await message.answer_chat_action("typing")
+    await show_typing_action(message)
     return await safe_answer_message(message, wait_text)
+
+
+async def safe_edit_message_markdown(message: types.Message, text: str) -> None:
+    """Safely edit message with markdown - eliminates duplication."""
+    await safe_edit_message(message, text, parse_mode="Markdown")
+
+
+async def safe_answer_message_markdown(message: types.Message, text: str) -> Optional[types.Message]:
+    """Safely answer message with markdown - eliminates duplication."""
+    try:
+        return await message.answer(text, parse_mode="Markdown")
+    except Exception as e:
+        log_error("Failed to answer message with markdown", get_safe_user_id(message), e)
+        return None
+
+
+def log_handler_error(handler_name: str, message: types.Message, exception: Exception) -> None:
+    """Log handler error with consistent pattern - eliminates duplication."""
+    log_error(f"{handler_name} failed", get_safe_user_id(message), exception)
 
 
 async def process_status_update(application: ApplicationModel, scraper, notify_callback=None) -> Tuple[bool, List[StatusModel]]:
@@ -159,8 +219,7 @@ def format_new_status_message(session_id: str, new_statuses: List[StatusModel]) 
     msg_text = STATUS_CHANGE_DETECTED.format(session_id=session_id)
     
     for i, status in enumerate(new_statuses, start=1):
-        date = datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")
-        msg_text += f"{i}. *{status.status}* \n_{date}_\n\n"
+        msg_text += _format_single_status(status, i)
     
     return msg_text
 
