@@ -3,7 +3,7 @@
 Utility functions for common patterns and operations.
 """
 from datetime import datetime
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 from aiogram import types
 from textwrap import dedent
 
@@ -39,11 +39,23 @@ async def get_application_by_session_id(session_id: str) -> Optional[Application
     return await ApplicationModel.find_one({"session_id": session_id})
 
 
-async def admin_permission_check(message: types.Message) -> bool:
+async def admin_permission_check(obj: Union[types.Message, types.CallbackQuery]) -> bool:
     """Check admin permission and send error message if not admin. Returns True if admin."""
     from bot.__main__ import is_admin
-    if not is_admin(message.from_user.id):
-        await message.answer("❌ Тільки адміністратор може користуватися цією командою!")
+    
+    # Extract user ID and determine message object
+    if isinstance(obj, types.CallbackQuery):
+        user_id = obj.from_user.id
+        message = obj.message
+    else:  # Message
+        user_id = obj.from_user.id
+        message = obj
+    
+    if not is_admin(user_id):
+        if isinstance(obj, types.CallbackQuery):
+            await obj.answer(ADMIN_ONLY_COMMAND, show_alert=True)
+        else:
+            await message.answer(ADMIN_ONLY_COMMAND)
         return False
     return True
 

@@ -270,8 +270,8 @@ async def cleanup_callback(callback_query: types.CallbackQuery) -> None:
     """Handle cleanup confirmation callback."""
     message = callback_query.message
     
-    # Check admin permission
-    if not await admin_permission_check(message):
+    # Check admin permission using from_user from callback_query
+    if not await admin_permission_check(callback_query):
         await callback_query.answer(ADMIN_CLEANUP_NO_PERMISSION)
         return
     
