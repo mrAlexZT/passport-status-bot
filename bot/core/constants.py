@@ -56,6 +56,14 @@ HEADER_APPLICATIONS = "*Заявки:*\n"
 
 # === ADMIN MESSAGES ===
 ADMIN_ONLY_COMMAND = "❌ Тільки адміністратор може користуватися цією командою!"
+ADMIN_USERS_LIST_HEADER = "*📊 Список користувачів:*\n"
+ADMIN_USER_ENTRY = "👤 *ID:* `{telegram_id}`"
+ADMIN_USER_SESSION = "   *Сесія:* `{session_id}`"
+ADMIN_USER_SUBSCRIPTIONS_HEADER = "   *Підписки:*"
+ADMIN_USER_NO_SUBSCRIPTIONS = "   *Підписки:* немає"
+ADMIN_USER_SUBSCRIPTION_ENTRY = "   • `{sub_id}`"
+ADMIN_TOTAL_STATS = "\n*Всього користувачів:* {users}\n*Всього підписок:* {subs}"
+ADMIN_INVALID_DATA_WARNING = "\n⚠️ *Увага:* Знайдено {invalid_users} невалідних користувачів та {invalid_subs} невалідних підписок"
 
 # === TIME FORMATTING ===
 LAST_UPDATE_FORMAT = "Останнє оновлення: {timestamp}"
