@@ -17,7 +17,7 @@ from beanie import init_beanie
 # Local application imports
 from bot.bot_instance import (
     bot, loop, bot_version, bot_link,
-    update_version
+    update_version, get_bot_version
 )
 from bot.core.config import settings
 from bot.core.database import db
@@ -159,6 +159,9 @@ async def version(message: types.Message):
     try:
         # Force version check
         await update_version()
+
+        bot_version = await get_bot_version()
+        log_info(f"Bot version: {bot_version}")
         
         # Format version info
         version_text = VERSION_FORMAT.format(

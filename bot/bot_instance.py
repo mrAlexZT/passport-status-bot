@@ -109,6 +109,12 @@ async def version_check_loop():
         await update_version()
         await asyncio.sleep(3600)  # Check every hour
 
+
+@log_function("get_bot_version")
+async def get_bot_version():
+    """Get current bot version."""
+    return bot_version if bot_version else DEFAULT_VERSION
+
 # Schedule version updates
 loop.create_task(update_version())  # Initial update
 loop.create_task(version_check_loop())  # Periodic updates
