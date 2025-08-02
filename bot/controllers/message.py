@@ -1,40 +1,53 @@
+# Standard library imports
 from datetime import datetime
+
+# Third party imports
+import cv2
+import numpy as np
 from aiogram import types
 from PIL import Image
-import numpy as np
 from qreader import QReader
-import cv2
+
+# Local application imports
 from bot.core.api import Scraper
+from bot.core.constants import *
 from bot.core.logger import log_function, log_error
+from bot.core.utils import format_status_list, safe_answer_message, safe_edit_message
 
 
 @log_function("custom_check")
 async def custom_check(message: types.Message) -> None:
     """Check application status by ID and reply with formatted status list."""
-    _message = await message.answer("Зачекайте, будь ласка, триває перевірка...")
+    _message = await safe_answer_message(message, WAIT_CHECKING)
+    if not _message:
+        return
+    
     await message.answer_chat_action("typing")
     try:
         scraper = Scraper()
-        status = scraper.check(message.text, retrive_all=True)
-        if not status:
-            await _message.edit_text("Виникла помилка, спробуйте пізніше.")
+        status_data = scraper.check(message.text, retrive_all=True)
+        if not status_data:
+            await safe_edit_message(_message, ERROR_CHECKING)
             return
-        _msg_text = f"Статуси заявки *#{message.text}:*\n\n"
-        for i, s in enumerate(status):
-            _date = datetime.fromtimestamp(int(s.get("date")) / 1000).strftime(
-                "%Y-%m-%d %H:%M"
-            )
-            _msg_text += f"{i+1}. *{s.get('status')}* \n_{_date}_\n\n"
-        await _message.edit_text(_msg_text, parse_mode="Markdown")
+        
+        # Use the centralized status formatting function
+        from bot.core.utils import create_status_models_from_api_response
+        statuses = create_status_models_from_api_response(status_data)
+        formatted_text = format_status_list(statuses, session_id=message.text)
+        
+        await safe_edit_message(_message, formatted_text, parse_mode="Markdown")
     except Exception as e:
         log_error("custom_check failed", getattr(message.from_user, 'id', None), e)
-        await _message.edit_text("Виникла помилка при перевірці. Спробуйте пізніше.")
+        await safe_edit_message(_message, ERROR_GENERIC_DETAILED.format(operation="перевірці"))
 
 
 @log_function("image_qr_recognition")
 async def image_qr_recognition(message: types.Message) -> None:
     """Recognize QR code from an image and reply with the decoded value or error."""
-    _message = await message.answer("Зачекайте, будь ласка, триває аналіз фото...")
+    _message = await safe_answer_message(message, WAIT_PHOTO_ANALYSIS)
+    if not _message:
+        return
+    
     await message.answer_chat_action("typing")
     try:
         file = await message.bot.get_file(message.photo[-1].file_id)
@@ -44,9 +57,9 @@ async def image_qr_recognition(message: types.Message) -> None:
         qr = QReader()
         decoded = qr.detect_and_decode(image=image)
         if not decoded:
-            await _message.edit_text("QR-код не розпізнано. Переконайтеся, що фото чітке та спробуйте ще раз.")
+            await safe_edit_message(_message, QR_NOT_RECOGNIZED)
             return
-        await _message.edit_text(f"Розпізнано QR-код: `{decoded}`", parse_mode="Markdown")
+        await safe_edit_message(_message, QR_RECOGNIZED.format(code=decoded), parse_mode="Markdown")
     except Exception as e:
         log_error("image_qr_recognition failed", getattr(message.from_user, 'id', None), e)
-        await _message.edit_text("Виникла помилка при розпізнаванні QR-коду. Спробуйте пізніше.")
+        await safe_edit_message(_message, ERROR_QR_RECOGNITION)

@@ -10,6 +10,7 @@ from aiogram import types
 # Local application imports
 from bot.__main__ import is_admin
 from bot.core.api import Scraper
+from bot.core.constants import *
 from bot.core.logger import log_function, log_error
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.push import PushModel
@@ -66,7 +67,7 @@ async def _create_subscription_for_session(user_id: int, session_id: str) -> boo
 @log_function("subscribe")
 async def subscribe(message: types.Message) -> None:
     """Subscribe the user to notifications for one or more session IDs."""
-    _message = await show_typing_and_wait_message(message, "Зачекайте, будь ласка, триває перевірка...")
+    _message = await show_typing_and_wait_message(message, WAIT_CHECKING)
     if not _message:
         return
     
@@ -78,10 +79,7 @@ async def subscribe(message: types.Message) -> None:
         
         # Check subscription limit first
         if await check_subscription_limit(message.from_user.id):
-            await safe_edit_message(
-                _message,
-                "Ви досягли максимальної кількості підписок на сповіщення про зміну статусу заявки"
-            )
+            await safe_edit_message(_message, SUBSCRIPTION_LIMIT_REACHED)
             return
         
         session_ids = parts[1:]
@@ -90,16 +88,16 @@ async def subscribe(message: types.Message) -> None:
         for session_id in session_ids:
             await safe_edit_message(
                 _message,
-                f"Зачекайте, будь ласка, триває оформлення підписки #{session_id}..."
+                WAIT_SUBSCRIPTION_PROCESSING.format(session_id=session_id)
             )
             
             if await _create_subscription_for_session(message.from_user.id, session_id):
                 successful_subscriptions += 1
         
         if successful_subscriptions > 0:
-            await safe_edit_message(_message, "Ви успішно підписані на сповіщення про зміну статусу")
+            await safe_edit_message(_message, SUCCESS_SUBSCRIPTION_CREATED)
         else:
-            await safe_edit_message(_message, "Не вдалося створити підписки. Перевірте правильність ідентифікаторів.")
+            await safe_edit_message(_message, SUBSCRIPTION_CREATE_FAILED)
     
     except Exception as e:
         log_error("subscribe failed", getattr(message.from_user, 'id', None), e)
@@ -109,7 +107,7 @@ async def subscribe(message: types.Message) -> None:
 @log_function("unsubscribe")
 async def unsubscribe(message: types.Message) -> None:
     """Unsubscribe the user from notifications for a session ID."""
-    _message = await show_typing_and_wait_message(message, "Зачекайте, будь ласка, триває перевірка...")
+    _message = await show_typing_and_wait_message(message, WAIT_CHECKING)
     if not _message:
         return
     
@@ -125,17 +123,11 @@ async def unsubscribe(message: types.Message) -> None:
         )
         
         if not subscription:
-            await safe_edit_message(
-                _message,
-                "Ви не підписані на сповіщення про зміну статусу заявки"
-            )
+            await safe_edit_message(_message, NOT_SUBSCRIBED)
             return
         
         await subscription.delete()
-        await safe_edit_message(
-            _message,
-            "Ви успішно відписані від сповіщень про зміну статусу заявки"
-        )
+        await safe_edit_message(_message, SUCCESS_UNSUBSCRIPTION)
     except Exception as e:
         log_error("unsubscribe failed", getattr(message.from_user, 'id', None), e)
         await handle_generic_error(_message, "відписці")
@@ -144,7 +136,7 @@ async def unsubscribe(message: types.Message) -> None:
 @log_function("subscriptions")
 async def subscriptions(message: types.Message) -> None:
     """Show the user's current subscriptions."""
-    _message = await show_typing_and_wait_message(message, "Зачекайте, будь ласка, триває отримання даних...")
+    _message = await show_typing_and_wait_message(message, WAIT_DATA_LOADING)
     if not _message:
         return
     
@@ -163,74 +155,45 @@ async def subscriptions(message: types.Message) -> None:
 @log_function("manual_application_update")
 async def manual_application_update(message: types.Message) -> None:
     """Manually update the user's application status."""
-    _message = await message.answer("Зачекайте, будь ласка, триває отримання даних...")
-    await message.answer_chat_action("typing")
+    _message = await show_typing_and_wait_message(message, WAIT_DATA_LOADING)
+    if not _message:
+        return
+    
     try:
-        _user = await UserModel.find_one({"telegram_id": str(message.from_user.id)})
+        _user = await get_user_by_telegram_id(message.from_user.id)
         _application = await ApplicationModel.find_one(
             {"session_id": _user.session_id} if _user else {}
         )
         if not _user or not _application:
-            await _message.edit_text(
-                "Вашого ідентифікатора не знайдено або заявка не знайдена."
-            )
+            await safe_edit_message(_message, NOT_FOUND_IDENTIFIER_OR_APPLICATION)
             return
 
         # Set wait time based on admin status
         _wait_time_minutes = 2 if is_admin(_user.telegram_id) else 60
 
         if _application.last_update > datetime.now() - timedelta(minutes=_wait_time_minutes):
-
-            await _message.edit_text(
-                f"Останнє оновлення було менше {_wait_time_minutes} хв тому, спробуйте пізніше.",
+            await safe_edit_message(
+                _message,
+                RATE_LIMIT_WAIT_MESSAGE.format(minutes=_wait_time_minutes),
                 parse_mode="Markdown",
             )
             return
 
-        scraper = Scraper()
-        status = scraper.check(_application.session_id, retrive_all=True)
+        # Use the centralized status processing function
+        has_new_statuses, new_statuses = await process_status_update(
+            _application, Scraper(), notify_subscribers
+        )
 
-        if not status:
-            await _message.edit_text(
-                "Виникла помилка перевірки ідентифікатора, можливо дані некоректні чи ще не внесені в базу, спробуйте пізніше."
-            )
-            return
-
-        _statuses = []
-        for s in status:
-            _statuses.append(
-                StatusModel(
-                    status=s.get("status"),
-                    date=s.get("date"),
-                )
-            )
-        if len(_statuses) > len(_application.statuses):
-            # find new statuses
-            new_statuses = _statuses[len(_application.statuses) :]
-            # notify subscribers
-            await notify_subscribers()
-
-            _msg_text = f"""
-            Ми помітили зміну статусу заявки *#{_user.session_id}:*
-            """
-
-            for i, s in enumerate(new_statuses):
-                _date = datetime.fromtimestamp(int(s.date) / 1000).strftime(
-                    "%Y-%m-%d %H:%M"
-                )
-                _msg_text += f"{i+1}. *{s.status}* \n_{_date}_\n\n"
-
-            await _message.edit_text(_msg_text, parse_mode="Markdown")
+        if not has_new_statuses:
+            await safe_edit_message(_message, STATUS_NOT_CHANGED, parse_mode="Markdown")
         else:
-            await _message.edit_text(f"Статуси не змінилися.\n\n/cabinet - персональний кабінет", parse_mode="Markdown")
+            # Format the new status message
+            msg_text = format_new_status_message(_user.session_id, new_statuses)
+            await safe_edit_message(_message, msg_text, parse_mode="Markdown")
 
-        _application.statuses = _statuses
-        _application.last_update = datetime.now()
-
-        await _application.save()
     except Exception as e:
         log_error("manual_application_update failed", getattr(message.from_user, 'id', None), e)
-        await _message.edit_text("Виникла помилка при оновленні заявки. Спробуйте пізніше.")
+        await safe_edit_message(_message, ERROR_APPLICATION_UPDATE)
 
 
 @log_function("enable_push")
@@ -238,13 +201,15 @@ async def enable_push(message: types.Message):
     _push = await PushModel.find_one({"telegram_id": str(message.from_user.id)})
     if _push:
         await message.answer(
-            f"Ви вже підписані на сповіщення про зміну статусу заявки.\nTopic: `MFA_{message.from_id}_{_push.secret_id}`",
+            SUBSCRIPTION_ALREADY_EXISTS.format(
+                user_id=message.from_id,
+                secret_id=_push.secret_id
+            ),
             parse_mode="Markdown",
         )
-
         return
 
-    # generate random secret id for push - lenght 32
+    # Generate random secret id for push - length 32
     _secret_id = secrets.token_hex(16)
 
     _push = PushModel(
@@ -254,14 +219,9 @@ async def enable_push(message: types.Message):
     await _push.insert()
 
     await message.answer(
-        dedent(
-            f"""
-                Ви успішно підписані на сповіщення про зміну статусу заявки
-                Ваш секретний ідентифікатор: {_secret_id}
-
-                Щоб підписатиня на сповіщення, додайте наступний топік до NTFY.sh:
-                `MFA_{message.from_id}_{_secret_id}`
-            """,
+        PUSH_SUCCESS_MESSAGE.format(
+            secret_id=_secret_id,
+            user_id=message.from_id
         ),
         parse_mode="Markdown",
     )
@@ -274,39 +234,23 @@ async def dump_subscriptions(message: types.Message):
     ).to_list()
 
     if not _subscriptions:
-        await message.answer("Ви не підписані на сповіщення про зміну статусу заявки")
+        await message.answer(NOT_SUBSCRIBED)
         return
 
-    _msg_text = dedent(
-        f"""
-            *Ваші підписки:*
-        """
-    )
+    # Use the centralized subscription formatting function
+    subscription_text = format_subscription_list(_subscriptions, include_count=True)
+    _message = await message.answer(subscription_text, parse_mode="Markdown")
 
-    for i, s in enumerate(_subscriptions):
-        _msg_text += f"{i+1}. *{s.session_id}* \n"
-
-    _msg_text += dedent(
-        f"""
-            Всього: {len(_subscriptions)}
-        """
-    )
-
-    _message = await message.answer(_msg_text, parse_mode="Markdown")
-
+    # Get applications for detailed dump
     applications = await ApplicationModel.find(
         {"session_id": {"$in": [s.session_id for s in _subscriptions]}}
     ).to_list()
 
-    _msg_text = dedent(
-        f"""
-            *Заявки:*
-        """
-    )
+    _msg_text = HEADER_APPLICATIONS
 
     for i, s in enumerate(_subscriptions):
         _msg_text += f"\n📑*{s.session_id}* \n"
-        # add statuses
+        # Add statuses using centralized formatting
         _application = next(
             filter(lambda a: a.session_id == s.session_id, applications), None
         )
@@ -318,6 +262,6 @@ async def dump_subscriptions(message: types.Message):
             )
             _msg_text += f"     *{st.status}* \n          _{_date}_\n"
 
-    _msg_text += dedent(f"\nВсього: {len(_subscriptions)}")
+    _msg_text += f"\n{SUBSCRIPTION_COUNT_FORMAT.format(count=len(_subscriptions))}"
 
     await _message.edit_text(_msg_text, parse_mode="Markdown")

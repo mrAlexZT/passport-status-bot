@@ -7,6 +7,7 @@ from typing import Optional, List, Tuple
 from aiogram import types
 from textwrap import dedent
 
+from bot.core.constants import *
 from bot.core.logger import log_error
 from bot.core.models.user import UserModel
 from bot.core.models.application import ApplicationModel, StatusModel
@@ -44,12 +45,25 @@ def format_status_list(statuses: List[StatusModel], session_id: str = None) -> s
     if not statuses:
         return "Немає статусів для відображення."
     
-    header = f"Статуси заявки *#{session_id}:*\n\n" if session_id else "Статуси:\n\n"
+    header = STATUS_APPLICATION_HEADER.format(session_id=session_id) if session_id else STATUS_GENERAL_HEADER
     msg_text = header
     
     for i, status in enumerate(statuses, start=1):
         date = datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")
         msg_text += f"{i}. *{status.status}* \n_{date}_\n\n"
+    
+    return msg_text
+
+
+def format_application_statuses_section(statuses: List[StatusModel]) -> str:
+    """Format application statuses section for cabinet display."""
+    if not statuses:
+        return ""
+    
+    msg_text = HEADER_APPLICATION_STATUSES
+    for i, status in enumerate(statuses, start=1):
+        date = datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")
+        msg_text += f"{i}. *{status.status}* _{date}_\n\n"
     
     return msg_text
 
@@ -71,58 +85,44 @@ def get_new_statuses(current_statuses: List[StatusModel], previous_statuses: Lis
 
 async def handle_user_not_found(message: types.Message) -> None:
     """Handle case when user is not found in database."""
-    await safe_edit_message(
-        message,
-        "Вашого ідентифікатора не знайдено, надішліть його, будь ласка використовуючи команду /link \nНаприклад /link 1006655"
-    )
+    await safe_edit_message(message, NOT_FOUND_IDENTIFIER)
 
 
 async def handle_invalid_session_id(message: types.Message, command: str) -> None:
     """Handle case when session ID format is invalid."""
-    await safe_edit_message(
-        message,
-        f"Надішліть ваш ідентифікатор, будь ласка використовуючи команду {command} \nНаприклад {command} 1006655"
-    )
+    await safe_edit_message(message, INSTRUCTION_INVALID_SESSION_ID.format(command=command))
 
 
 async def handle_scraper_error(message: types.Message) -> None:
     """Handle case when scraper fails to get data."""
-    await safe_edit_message(
-        message,
-        "Виникла помилка перевірки ідентифікатора, можливо дані некоректні чи ще не внесені в базу, спробуйте пізніше."
-    )
+    await safe_edit_message(message, ERROR_IDENTIFIER_VALIDATION)
 
 
 async def handle_generic_error(message: types.Message, operation: str) -> None:
     """Handle generic errors with consistent messaging."""
-    await safe_edit_message(
-        message,
-        f"Виникла помилка при {operation}. Спробуйте пізніше."
-    )
+    await safe_edit_message(message, ERROR_GENERIC_DETAILED.format(operation=operation))
 
 
 def format_subscription_list(subscriptions: List, include_count: bool = True) -> str:
     """Format subscription list into readable text."""
     if not subscriptions:
-        return "Ви не підписані на сповіщення про зміну статусу заявки"
+        return NOT_SUBSCRIBED
     
-    msg_text = dedent("""
-        *Ваші підписки:*
-    """)
+    msg_text = HEADER_YOUR_SUBSCRIPTIONS
     
     for i, subscription in enumerate(subscriptions, start=1):
         msg_text += f"{i}. *{subscription.session_id}* \n"
     
     if include_count:
-        msg_text += dedent(f"""
-            Всього: {len(subscriptions)}
-        """)
+        msg_text += f"\n{SUBSCRIPTION_COUNT_FORMAT.format(count=len(subscriptions))}"
     
     return msg_text
 
 
-async def show_typing_and_wait_message(message: types.Message, wait_text: str = "Зачекайте, будь ласка, триває перевірка...") -> Optional[types.Message]:
+async def show_typing_and_wait_message(message: types.Message, wait_text: str = None) -> Optional[types.Message]:
     """Show typing indicator and send a wait message."""
+    if wait_text is None:
+        wait_text = WAIT_CHECKING
     await message.answer_chat_action("typing")
     return await safe_answer_message(message, wait_text)
 
@@ -156,7 +156,7 @@ async def process_status_update(application: ApplicationModel, scraper, notify_c
 
 def format_new_status_message(session_id: str, new_statuses: List[StatusModel]) -> str:
     """Format new status update message."""
-    msg_text = f"Ми помітили зміну статусу заявки *#{session_id}:*\n"
+    msg_text = STATUS_CHANGE_DETECTED.format(session_id=session_id)
     
     for i, status in enumerate(new_statuses, start=1):
         date = datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")

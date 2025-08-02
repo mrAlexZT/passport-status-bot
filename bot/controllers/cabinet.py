@@ -8,11 +8,13 @@ from aiogram import types
 
 # Local application imports
 from bot.core.api import Scraper
+from bot.core.constants import *
 from bot.core.logger import log_function, log_error
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.user import UserModel
 from bot.core.utils import (
     create_status_models_from_api_response,
+    format_application_statuses_section,
     get_user_by_telegram_id,
     handle_invalid_session_id,
     handle_scraper_error,
@@ -25,7 +27,7 @@ from bot.core.utils import (
 @log_function("cabinet")
 async def cabinet(message: types.Message) -> None:
     """Show the user's cabinet with session and application status."""
-    _message = await show_typing_and_wait_message(message, "Зачекайте, будь ласка, триває отримання даних...")
+    _message = await show_typing_and_wait_message(message, WAIT_DATA_LOADING)
     if not _message:
         return
 
@@ -34,12 +36,9 @@ async def cabinet(message: types.Message) -> None:
         await handle_user_not_found(_message)
         return
 
-    initial_message = dedent(
-        f"""
-            *Ваш кабінет:*
-            Telegram ID: `{message.from_user.id}`
-            Сесія: `{user.session_id}`
-        """
+    initial_message = HEADER_YOUR_CABINET.format(
+        user_id=message.from_user.id,
+        session_id=user.session_id
     )
 
     await safe_edit_message(_message, initial_message, parse_mode="Markdown")
@@ -48,23 +47,19 @@ async def cabinet(message: types.Message) -> None:
     if not application:
         return
 
-    msg_text = initial_message + "\n*Статуси заявки:*\n"
-    for i, s in enumerate(application.statuses, start=1):
-        date = datetime.fromtimestamp(int(s.date) / 1000).strftime("%Y-%m-%d %H:%M")
-        msg_text += f"{i}. *{s.status}* _{date}_\n\n"
-
-    msg_text += dedent(
-        f"""
-            Останнє оновлення: {application.last_update.strftime("%Y-%m-%d %H:%M")}
-        """
+    # Use the new centralized status formatting function
+    status_section = format_application_statuses_section(application.statuses)
+    last_update = LAST_UPDATE_FORMAT.format(
+        timestamp=application.last_update.strftime("%Y-%m-%d %H:%M")
     )
-
+    
+    msg_text = initial_message + "\n" + status_section + f"\n{last_update}"
     await safe_edit_message(_message, msg_text, parse_mode="Markdown")
 
 
 @log_function("link")
 async def link(message: types.Message) -> None:
-    _message = await show_typing_and_wait_message(message, "Зачекайте, будь ласка, триває перевірка...")
+    _message = await show_typing_and_wait_message(message, WAIT_CHECKING)
     if not _message:
         return
 
@@ -108,13 +103,13 @@ async def link(message: types.Message) -> None:
 
     await safe_edit_message(
         _message,
-        f"Ваш Telegram ID успішно прив'язаний до ідентифікатора {_user.session_id}"
+        SUCCESS_LINK_CREATED.format(session_id=_user.session_id)
     )
 
 
 @log_function("unlink")
 async def unlink(message: types.Message) -> None:
-    _message = await show_typing_and_wait_message(message, "Зачекайте, будь ласка, триває перевірка...")
+    _message = await show_typing_and_wait_message(message, WAIT_CHECKING)
     if not _message:
         return
 
@@ -128,5 +123,5 @@ async def unlink(message: types.Message) -> None:
     
     await safe_edit_message(
         _message,
-        f"Ваш Telegram ID успішно відв'язаний від ідентифікатора {session_id}"
+        SUCCESS_LINK_REMOVED.format(session_id=session_id)
     )

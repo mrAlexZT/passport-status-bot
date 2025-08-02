@@ -1,5 +1,11 @@
-from aiogram import types
+# Standard library imports
 import textwrap
+
+# Third party imports
+from aiogram import types
+
+# Local application imports
+from bot.core.constants import ERROR_GENERIC
 from bot.core.logger import log_function, log_error
 
 
@@ -22,7 +28,7 @@ async def start(message: types.Message) -> None:
         )
     except Exception as e:
         log_error("start handler failed", getattr(message.from_user, 'id', None), e)
-        await message.answer("Виникла помилка. Спробуйте пізніше.")
+        await message.answer(ERROR_GENERIC)
 
 
 @log_function("policy")
@@ -60,7 +66,7 @@ async def policy(message: types.Message) -> None:
         )
     except Exception as e:
         log_error("policy handler failed", getattr(message.from_user, 'id', None), e)
-        await message.answer("Виникла помилка. Спробуйте пізніше.")
+        await message.answer(ERROR_GENERIC)
 
 
 @log_function("help")
@@ -90,4 +96,4 @@ async def help(message: types.Message) -> None:
         )
     except Exception as e:
         log_error("help handler failed", getattr(message.from_user, 'id', None), e)
-        await message.answer("Виникла помилка. Спробуйте пізніше.")
+        await message.answer(ERROR_GENERIC)
