@@ -156,19 +156,13 @@ async def time(message: types.Message):
 async def version(message: types.Message):
     """Show bot version information."""
     try:
-        # Show progress while checking version
-        _message = await message.answer("🔄 Перевірка версії...")
-        
         # Force version check
         await update_version()
         
         # Format version info
-        if bot_version == "N/A":
-            version_text = "❌ *Не вдалося отримати інформацію про версію*"
-        else:
-            version_text = f"*v{bot_version}*"
-            
-        await _message.edit_text(
+        version_text = f"*v{bot_version}*" if bot_version != "N/A" else "❌ *Не вдалося отримати інформацію про версію*"
+        
+        await message.answer(
             f"🤖 Версія бота: {version_text}\n"
             f"📦 [Завантажити останню версію]({link})",
             parse_mode="Markdown",
