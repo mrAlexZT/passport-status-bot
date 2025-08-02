@@ -16,7 +16,7 @@ from beanie import init_beanie
 
 # Local application imports
 from bot.bot_instance import (
-    bot, loop, version as bot_version, link,
+    bot, loop, bot_version, bot_link,
     update_version
 )
 from bot.core.config import settings
@@ -164,7 +164,7 @@ async def version(message: types.Message):
         
         await message.answer(
             f"🤖 Версія бота: {version_text}\n"
-            f"📦 [Завантажити останню версію]({link})",
+            f"📦 [Завантажити останню версію]({bot_link})",
             parse_mode="Markdown",
             disable_web_page_preview=True
         )

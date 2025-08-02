@@ -3,7 +3,7 @@ import aiohttp
 from aiogram import Bot
 
 from bot.core.config import settings
-from bot.core.logger import log_error, log_function
+from bot.core.logger import log_error, log_function, log_info
 
 loop = asyncio.get_event_loop()
 bot = Bot(settings.TOKEN, loop=loop)
@@ -32,10 +32,8 @@ async def get_latest_release():
                     latest = await response.json()
                     version = latest["tag_name"].lstrip("v")
                     link = latest["html_url"]
-                    log_error(
-                        "Successfully fetched release info",
-                        None,
-                        f"Version: {version}, Link: {link}"
+                    log_info(
+                        f"Successfully fetched release info - Version: {version}, Link: {link}"
                     )
                     return version, link
                 else:
@@ -78,17 +76,23 @@ async def get_latest_release():
     
     return DEFAULT_VERSION, DEFAULT_LINK
 
-# Initialize version and link
-version, link = DEFAULT_VERSION, DEFAULT_LINK
+# Initialize global variables
+bot_version = DEFAULT_VERSION
+bot_link = DEFAULT_LINK
 
 # Update version and link asynchronously
 @log_function("update_version")
 async def update_version():
     """Update version and link from GitHub."""
-    global version, link
+    global bot_version, bot_link
+    log_info(f"Starting version update - Current version: {bot_version}")
     v, l = await get_latest_release()
     if v != "N/A":  # Only update if we got a valid version
-        version, link = v, l
+        bot_version, bot_link = v, l
+        log_info(f"Version updated successfully to {bot_version}")
+    else:
+        log_error("Version update failed", None, "Got N/A version")
+    return bot_version, bot_link
 
 @log_function("version_check_loop")
 async def version_check_loop():
