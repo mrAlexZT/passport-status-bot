@@ -3,6 +3,10 @@ import aiohttp
 from aiogram import Bot
 
 from bot.core.config import settings
+from bot.core.constants import (
+    VERSION_ERROR, VERSION_API_ERROR,
+    VERSION_NO_RELEASES
+)
 from bot.core.logger import log_error, log_function, log_info
 
 loop = asyncio.get_event_loop()
@@ -41,7 +45,7 @@ async def get_latest_release():
                     log_error(
                         "Failed to fetch latest release",
                         None,
-                        f"Status: {response.status}, Response: {response_text}"
+                        VERSION_API_ERROR.format(error=f"Status: {response.status}, Response: {response_text}")
                     )
                     
                     # If latest release endpoint fails, try listing all releases
@@ -60,19 +64,23 @@ async def get_latest_release():
                                 link = latest["html_url"]
                                 return version, link
                             else:
-                                log_error(
-                                    "No releases found",
-                                    None,
-                                    "Repository has no releases"
-                                )
+                                                            log_error(
+                                "No releases found",
+                                None,
+                                VERSION_NO_RELEASES
+                            )
                         else:
                             log_error(
                                 "Failed to fetch all releases",
                                 None,
-                                f"Status: {all_response.status}, Response: {await all_response.text()}"
+                                VERSION_API_ERROR.format(error=f"Status: {all_response.status}, Response: {await all_response.text()}")
                             )
     except Exception as e:
-        log_error("Failed to fetch release info", None, str(e))
+        log_error(
+            "Failed to fetch release info",
+            None,
+            VERSION_API_ERROR.format(error=str(e))
+        )
     
     return DEFAULT_VERSION, DEFAULT_LINK
 

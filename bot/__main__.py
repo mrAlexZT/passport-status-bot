@@ -21,6 +21,7 @@ from bot.bot_instance import (
 )
 from bot.core.config import settings
 from bot.core.database import db
+from bot.core.constants import VERSION_ERROR, VERSION_FORMAT, VERSION_UPDATE_ERROR
 from bot.core.logger import global_logger, log_function, log_error, log_info
 from bot.core.models.application import ApplicationModel
 from bot.core.models.push import PushModel
@@ -160,17 +161,19 @@ async def version(message: types.Message):
         await update_version()
         
         # Format version info
-        version_text = f"*v{bot_version}*" if bot_version != "N/A" else "❌ *Не вдалося отримати інформацію про версію*"
+        version_text = VERSION_FORMAT.format(
+            version=bot_version,
+            link=bot_link
+        ) if bot_version != "N/A" else VERSION_ERROR
         
         await message.answer(
-            f"🤖 Версія бота: {version_text}\n"
-            f"📦 [Завантажити останню версію]({bot_link})",
+            version_text,
             parse_mode="Markdown",
             disable_web_page_preview=True
         )
     except Exception as e:
         log_error("Version command failed", message.from_user.id, e)
-        await message.answer("❌ Помилка при отриманні інформації про версію")
+        await message.answer(VERSION_UPDATE_ERROR)
 
 
 @dp.message_handler(commands=["toggle_logging"])
