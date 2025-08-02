@@ -62,8 +62,9 @@ ADMIN_COMMANDS = [
     types.BotCommand(command="/toggle_logging", description="Увімкнути/вимкнути логування"),
     types.BotCommand(command="/logs", description="Переглянути логи"),
     types.BotCommand(command="/users", description="Список користувачів"),
+    types.BotCommand(command="/cleanup", description="Очистити базу даних"),
 ]
-ADMIN_ONLY_COMMANDS = {"/broadcast", "/get_out_txt", "/stats", "/stats_graph", "/toggle_logging", "/logs", "/users"}
+ADMIN_ONLY_COMMANDS = {"/broadcast", "/get_out_txt", "/stats", "/stats_graph", "/toggle_logging", "/logs", "/users", "/cleanup"}
 
 
 def get_user_commands(is_admin: bool) -> list[types.BotCommand]:
