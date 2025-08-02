@@ -9,6 +9,12 @@ from typing import Optional
 # Local application imports
 from bot.core.config import settings
 
+# Try to import CancelHandler for proper exception handling
+try:
+    from aiogram.dispatcher.handler import CancelHandler
+except ImportError:
+    CancelHandler = None
+
 
 class GlobalLogger:
     _instance: Optional["GlobalLogger"] = None
@@ -130,6 +136,9 @@ def log_function(func_name: str = None):
                 global_logger.info(f"Function '{name}' completed successfully", user_id)
                 return result
             except Exception as e:
+                # Don't log aiogram's CancelHandler as it's used for flow control
+                if CancelHandler and isinstance(e, CancelHandler):
+                    raise
                 global_logger.error(f"Function '{name}' failed", user_id, e)
                 raise
 
@@ -154,6 +163,9 @@ def log_function(func_name: str = None):
                 global_logger.info(f"Function '{name}' completed successfully", user_id)
                 return result
             except Exception as e:
+                # Don't log aiogram's CancelHandler as it's used for flow control
+                if CancelHandler and isinstance(e, CancelHandler):
+                    raise
                 global_logger.error(f"Function '{name}' failed", user_id, e)
                 raise
 
