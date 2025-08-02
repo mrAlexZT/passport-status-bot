@@ -13,7 +13,7 @@ loop = asyncio.get_event_loop()
 bot = Bot(settings.TOKEN, loop=loop)
 
 # Default values in case GitHub API is unavailable
-DEFAULT_VERSION = "N/A"
+DEFAULT_VERSION = None
 DEFAULT_LINK = "https://github.com/mrAlexZT/passport-status-bot/releases/latest"
 
 @log_function("get_latest_release")

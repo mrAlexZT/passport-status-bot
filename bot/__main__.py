@@ -164,7 +164,7 @@ async def version(message: types.Message):
         version_text = VERSION_FORMAT.format(
             version=bot_version,
             link=bot_link
-        ) if bot_version != "N/A" else VERSION_ERROR
+        ) if bot_version else VERSION_ERROR
         
         await message.answer(
             version_text,
