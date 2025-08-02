@@ -128,6 +128,7 @@ async def users_list(message: types.Message) -> None:
         await safe_edit_message(_message, ERROR_GENERIC)
 
 
+@log_function("analyze_db")
 async def analyze_db(message: types.Message = None):
     """Analyze database for invalid records. Optionally updates progress message."""
     # Get raw collections

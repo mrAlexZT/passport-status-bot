@@ -3,7 +3,7 @@ import aiohttp
 from aiogram import Bot
 
 from bot.core.config import settings
-from bot.core.logger import log_error
+from bot.core.logger import log_error, log_function
 
 loop = asyncio.get_event_loop()
 bot = Bot(settings.TOKEN, loop=loop)
@@ -13,6 +13,7 @@ DEFAULT_VERSION = "N/A"
 DEFAULT_LINK = "https://github.com/mrAlexZT/passport-status-bot/releases/latest"
 codename = "Silence"
 
+@log_function("get_latest_release")
 async def get_latest_release():
     """
     Fetch latest release info from GitHub API.
@@ -67,6 +68,7 @@ async def get_latest_release():
 version, link = DEFAULT_VERSION, DEFAULT_LINK
 
 # Update version and link asynchronously
+@log_function("update_version")
 async def update_version():
     """Update version and link from GitHub."""
     global version, link
@@ -74,6 +76,7 @@ async def update_version():
     if v != "N/A":  # Only update if we got a valid version
         version, link = v, l
 
+@log_function("version_check_loop")
 async def version_check_loop():
     """Periodically check for new versions."""
     while True:

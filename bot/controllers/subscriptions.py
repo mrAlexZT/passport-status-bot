@@ -37,6 +37,7 @@ from bot.core.utils import (
 )
 
 
+@log_function("_create_subscription_for_session")
 async def _create_subscription_for_session(user_id: int, session_id: str) -> bool:
     """Create a subscription for a specific session ID. Returns True if successful."""
     # Check if subscription already exists
