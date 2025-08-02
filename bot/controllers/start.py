@@ -70,31 +70,39 @@ async def policy(message: types.Message) -> None:
         await message.answer(ERROR_GENERIC)
 
 
+def get_help_text(is_admin: bool) -> str:
+    """Generate help text dynamically based on admin status."""
+    from bot.__main__ import get_user_commands
+    
+    commands = get_user_commands(is_admin)
+    
+    help_lines = ["*Довідка*"]
+    
+    if is_admin:
+        help_lines.append("*🔸 Адміністратор*")
+        help_lines.append("")
+    
+    # Add all available commands for the user
+    for cmd in commands:
+        help_lines.append(f"{cmd.command} — {cmd.description}")
+    
+    if is_admin:
+        help_lines.append("")
+        help_lines.append("*Адміністраторські команди виділені окремо.*")
+    
+    return "\n".join(help_lines)
+
+
 @log_function("help")
 async def help(message: types.Message) -> None:
     """Send help and usage instructions to the user."""
     try:
-        await message.answer(
-            textwrap.dedent(
-                """
-                    *Довідка*
-                    /start — почати роботу з ботом
-                    /cabinet — переглянути ваш кабінет
-                    /link <id> — прив'язати ідентифікатор
-                    /unlink — відв'язати ідентифікатор
-                    /subscribe <id> — підписатися на сповіщення
-                    /unsubscribe <id> — відписатися від сповіщень
-                    /subscriptions — список підписок
-                    /update — оновити статус заявки вручну
-                    /push — підписатися на сповіщення через NTFY.sh
-                    /dump — отримати весь дамп доступних даних на ваші підписки
-                    /ping — перевірити чи працює бот
-                    /time — поточний час сервера
-                    /version — версія бота
-                """
-            ),
-            parse_mode="Markdown",
-        )
+        from bot.__main__ import is_admin
+        
+        user_is_admin = is_admin(message.from_user.id)
+        help_text = get_help_text(user_is_admin)
+        
+        await message.answer(help_text, parse_mode="Markdown")
     except Exception as e:
         log_handler_error("help handler", message, e)
         await message.answer(ERROR_GENERIC)
