@@ -16,48 +16,63 @@ DEFAULT_LINK = "https://github.com/mrAlexZT/passport-status-bot/releases/latest"
 async def get_latest_release():
     """
     Fetch latest release info from GitHub API.
-    Returns tuple of (version, link, is_prerelease).
+    Returns tuple of (version, link).
     """
     try:
         async with aiohttp.ClientSession() as session:
-            # First try to get all releases to find latest stable
+            # Try to get latest release directly
             async with session.get(
-                "https://api.github.com/repos/mrAlexZT/passport-status-bot/releases",
-                headers={"Accept": "application/vnd.github+json"}
+                "https://api.github.com/repos/mrAlexZT/passport-status-bot/releases/latest",
+                headers={
+                    "Accept": "application/vnd.github+json",
+                    "X-GitHub-Api-Version": "2022-11-28"
+                }
             ) as response:
                 if response.status == 200:
-                    releases = await response.json()
-                    
-                    # Filter out drafts and find latest stable release
-                    stable_releases = [
-                        r for r in releases 
-                        if not r["draft"] and not r["prerelease"]
-                    ]
-                    
-                    if stable_releases:
-                        latest = stable_releases[0]  # Releases are sorted by date
-                        version = latest["tag_name"].lstrip("v")
-                        link = latest["html_url"]
-                        return version, link
-                    
-                    # If no stable releases found, try to get any release
-                    if releases:
-                        latest = releases[0]
-                        version = latest["tag_name"].lstrip("v")
-                        link = latest["html_url"]
-                        return version, link
-                    
+                    latest = await response.json()
+                    version = latest["tag_name"].lstrip("v")
+                    link = latest["html_url"]
                     log_error(
-                        "No releases found",
+                        "Successfully fetched release info",
                         None,
-                        "Repository has no releases"
+                        f"Version: {version}, Link: {link}"
                     )
+                    return version, link
                 else:
+                    response_text = await response.text()
                     log_error(
-                        "Failed to fetch releases",
+                        "Failed to fetch latest release",
                         None,
-                        f"Status: {response.status}, Response: {await response.text()}"
+                        f"Status: {response.status}, Response: {response_text}"
                     )
+                    
+                    # If latest release endpoint fails, try listing all releases
+                    async with session.get(
+                        "https://api.github.com/repos/mrAlexZT/passport-status-bot/releases",
+                        headers={
+                            "Accept": "application/vnd.github+json",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    ) as all_response:
+                        if all_response.status == 200:
+                            releases = await all_response.json()
+                            if releases:
+                                latest = releases[0]  # Get most recent release
+                                version = latest["tag_name"].lstrip("v")
+                                link = latest["html_url"]
+                                return version, link
+                            else:
+                                log_error(
+                                    "No releases found",
+                                    None,
+                                    "Repository has no releases"
+                                )
+                        else:
+                            log_error(
+                                "Failed to fetch all releases",
+                                None,
+                                f"Status: {all_response.status}, Response: {await all_response.text()}"
+                            )
     except Exception as e:
         log_error("Failed to fetch release info", None, str(e))
     
