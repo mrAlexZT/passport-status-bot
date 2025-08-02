@@ -12,6 +12,7 @@ from bot.core.utils import (
     admin_permission_check,
     safe_answer_message,
     safe_edit_message,
+    safe_edit_message_markdown,
     show_typing_and_wait_message,
 )
 from bot.core.constants import WAIT_DATA_LOADING, ERROR_GENERIC
@@ -50,7 +51,7 @@ async def users_list(message: types.Message) -> None:
             user_subscriptions[telegram_id].append(sub.get('session_id', 'Unknown'))
         
         # Format message
-        msg_lines = ["📊 Список користувачів:\\n"]
+        msg_lines = ["*📊 Список користувачів:*\n"]
         
         for user in users:
             telegram_id = user.get('telegram_id')
@@ -60,22 +61,22 @@ async def users_list(message: types.Message) -> None:
             # Get user's subscriptions
             user_subs = user_subscriptions.get(telegram_id, [])
             
-            msg_lines.append(f"👤 ID: {telegram_id}")
-            msg_lines.append(f"   Сесія: {user.get('session_id', 'Не встановлено')}")
+            msg_lines.append(f"👤 *ID:* `{telegram_id}`")
+            msg_lines.append(f"   *Сесія:* `{user.get('session_id', 'Не встановлено')}`")
             
             if user_subs:
-                msg_lines.append("   Підписки:")
+                msg_lines.append("   *Підписки:*")
                 for sub_id in user_subs:
-                    msg_lines.append(f"   • {sub_id}")
+                    msg_lines.append(f"   • `{sub_id}`")
             else:
-                msg_lines.append("   Підписки: немає")
+                msg_lines.append("   *Підписки:* немає")
             msg_lines.append("")  # Empty line between users
         
-        msg_lines.append(f"\\nВсього користувачів: {len(users)}")
-        msg_lines.append(f"Всього підписок: {len(subscriptions)}")
+        msg_lines.append(f"\n*Всього користувачів:* {len(users)}")
+        msg_lines.append(f"*Всього підписок:* {len(subscriptions)}")
         
-        # Send message
-        await safe_edit_message(_message, "\\n".join(msg_lines))
+        # Send message with Markdown formatting
+        await safe_edit_message_markdown(_message, "\n".join(msg_lines))
         
     except Exception as e:
         log_error("users_list failed", message.from_user.id, e)
