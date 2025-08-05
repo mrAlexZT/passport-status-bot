@@ -1,3 +1,14 @@
+# 0.2.1
+- Added `/authors` command with detailed information about:
+  - Project authors and contributors
+  - Contact information and social links
+  - Project details and technical stack
+  - Improved formatting and organization
+- Added "Command not found" handler with helpful `/help` suggestion
+- Added proper error logging for notification sending
+- Improved version handling with better error messages
+- Fixed Markdown formatting in various messages
+
 # 0.2.0
 - Added admin commands and improvements:
   - `/users` - List all users and their subscriptions with detailed statistics
