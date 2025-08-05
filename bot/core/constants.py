@@ -125,7 +125,7 @@ PUSH_NOTIFICATION_ERROR = "Помилка при надсиланні спові
 PUSH_NOTIFICATION_SEND_ERROR = "Помилка при надсиланні сповіщення через Telegram: {error}"
 
 # === COMMAND MESSAGES ===
-COMMAND_NOT_FOUND = "❌ Команду не знайдено.\n\nСкористайтеся /help для перегляду списку доступних команд."
+COMMAND_NOT_FOUND = "❌ Команду {command} не знайдено.\n\nСкористайтеся /help для перегляду списку доступних команд."
 
 # === RATE LIMIT MESSAGES ===
 RATE_LIMIT_WAIT_MESSAGE = "Останнє оновлення було менше {minutes} хв тому, спробуйте пізніше."

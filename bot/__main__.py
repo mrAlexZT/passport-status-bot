@@ -246,7 +246,7 @@ async def set_user_commands(user_id: int) -> None:
 async def command_not_found(message: types.Message):
     """Handle unrecognized commands."""
     try:
-        await message.answer(COMMAND_NOT_FOUND)
+        await message.answer(COMMAND_NOT_FOUND.format(command=message.text.split()[0]))
     except Exception as e:
         log_error("Command not found handler failed", message.from_user.id, e)
 
