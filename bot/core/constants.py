@@ -120,5 +120,9 @@ PUSH_SUCCESS_MESSAGE = """Ви успішно підписані на спові
 Щоб підписатиня на сповіщення, додайте наступний топік до NTFY.sh:
 `MFA_{user_id}_{secret_id}`"""
 
+PUSH_NOTIFICATION_TITLE = "Оновлення заявки #{session_id}"
+PUSH_NOTIFICATION_ERROR = "Помилка при надсиланні сповіщення користувачу {telegram_id}: {error}"
+PUSH_NOTIFICATION_SEND_ERROR = "Помилка при надсиланні сповіщення через Telegram: {error}"
+
 # === RATE LIMIT MESSAGES ===
 RATE_LIMIT_WAIT_MESSAGE = "Останнє оновлення було менше {minutes} хв тому, спробуйте пізніше."

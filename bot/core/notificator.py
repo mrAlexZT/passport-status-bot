@@ -1,7 +1,12 @@
 from datetime import datetime
 import requests
 
-from bot.core.logger import log_function
+from bot.core.constants import (
+    PUSH_NOTIFICATION_TITLE,
+    PUSH_NOTIFICATION_ERROR,
+    PUSH_NOTIFICATION_SEND_ERROR
+)
+from bot.core.logger import log_error, log_function
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.push import PushModel
 from bot.core.models.user import SubscriptionModel
@@ -46,11 +51,21 @@ async def notify_subscribers(
             _message = f""
             for status in new_statuses:
                 _message += f"{status.status}\n"
-            send_push(
-                f"MFA_{_subscription.telegram_id}_{_push_subscription.secret_id}",
-                f"Оновлення заявки #{target_application.session_id}",
-                _message,
-            )
+            try:
+                send_push(
+                    f"MFA_{_subscription.telegram_id}_{_push_subscription.secret_id}",
+                    PUSH_NOTIFICATION_TITLE.format(session_id=target_application.session_id),
+                    _message,
+                )
+            except Exception as e:
+                log_error(
+                    PUSH_NOTIFICATION_ERROR.format(
+                        telegram_id=_subscription.telegram_id,
+                        error=str(e)
+                    ),
+                    _subscription.telegram_id,
+                    e
+                )
 
         try:
             await bot.send_message(
@@ -58,5 +73,9 @@ async def notify_subscribers(
                 _msg_text,
                 parse_mode="Markdown",
             )
-        except:
-            pass
+        except Exception as e:
+            log_error(
+                PUSH_NOTIFICATION_SEND_ERROR.format(error=str(e)),
+                _subscription.telegram_id,
+                e
+            )
