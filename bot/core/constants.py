@@ -141,9 +141,8 @@ AUTHORS_MESSAGE = """👨‍💻 *Автори бота:*
    • [👨‍💻 GitHub](https://github.com/mrAlexZT)
 
 *Про проект:*
-📦 *Версія:* v{version}
-📚 *Репозиторій:* [passport-status-bot]({repo_link})
-📝 *Ліцензія:* MIT
+📦 *Версія:* [v{version}]({repo_link})
+📝 *Ліцензія:* [MIT](https://github.com/denver-code/passport-status-bot/blob/main/LICENSE)
 
 *Технічна інформація:*
 🔧 Python, MongoDB, aiogram
