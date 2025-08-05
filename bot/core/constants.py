@@ -145,9 +145,9 @@ AUTHORS_MESSAGE = """👨‍💻 *Автори бота:*
 📝 *Ліцензія:* [MIT](https://github.com/denver-code/passport-status-bot/blob/main/LICENSE)
 
 *Технічна інформація:*
-🔧 Python, MongoDB, aiogram
-🤖 Telegram Bot API
-🔄 Асинхронна архітектура
+🔧 [Python](https://www.python.org/), [MongoDB](https://www.mongodb.com/), [aiogram](https://docs.aiogram.dev/)
+🤖 [Telegram Bot API](https://core.telegram.org/bots/api)
+🔄 [Асинхронна архітектура](https://docs.python.org/3/library/asyncio.html)
 
 Дякуємо за використання нашого бота! 🙏"""
 
