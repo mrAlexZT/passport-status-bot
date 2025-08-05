@@ -130,14 +130,14 @@ COMMAND_NOT_FOUND = "❌ Команду {command} не знайдено.\n\nСк
 # === AUTHORS INFO ===
 AUTHORS_MESSAGE = """👨‍💻 *Автори бота:*
 
-*1\. Автор ідеї та розробник:* Ihor Savenko
+*1. Автор ідеї та розробник:* Ihor Savenko
    • [👨‍💻 GitHub](https://github.com/denver-code)
    • [🌐 Website](https://ihorsavenko.com/)
    • [✈️ Telegram](https://t.me/operatorSilence)
    • [💬 Discord](https://discord.gg/operatorsilence)
    • [📧 Email](mailto:contact@ihorsavenko.com)
 
-*2\. Розробник:* Oleksandr Shevchenko
+*2. Розробник:* Oleksandr Shevchenko
    • [👨‍💻 GitHub](https://github.com/mrAlexZT)
 
 *Про проект:*
@@ -150,7 +150,7 @@ AUTHORS_MESSAGE = """👨‍💻 *Автори бота:*
 🤖 Telegram Bot API
 🔄 Асинхронна архітектура
 
-Дякуємо за використання нашого бота\! 🙏"""
+Дякуємо за використання нашого бота! 🙏"""
 
 # === RATE LIMIT MESSAGES ===
 RATE_LIMIT_WAIT_MESSAGE = "Останнє оновлення було менше {minutes} хв тому, спробуйте пізніше."
