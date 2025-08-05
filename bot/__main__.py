@@ -21,7 +21,12 @@ from bot.bot_instance import (
 )
 from bot.core.config import settings
 from bot.core.database import db
-from bot.core.constants import VERSION_ERROR, VERSION_FORMAT, VERSION_UPDATE_ERROR
+from bot.core.constants import (
+    COMMAND_NOT_FOUND,
+    VERSION_ERROR,
+    VERSION_FORMAT,
+    VERSION_UPDATE_ERROR
+)
 from bot.core.logger import global_logger, log_function, log_error, log_info
 from bot.core.models.application import ApplicationModel
 from bot.core.models.push import PushModel
@@ -235,6 +240,15 @@ async def set_user_commands(user_id: int) -> None:
     except Exception as e:
         log_error(f"Failed to set user commands for {user_id}", user_id, e)
 
+
+@dp.message_handler(lambda message: message.text.startswith('/') and not message.text.split()[0].split('@')[0] in [cmd.command for cmd in ADMIN_COMMANDS])
+@log_function("command_not_found")
+async def command_not_found(message: types.Message):
+    """Handle unrecognized commands."""
+    try:
+        await message.answer(COMMAND_NOT_FOUND)
+    except Exception as e:
+        log_error("Command not found handler failed", message.from_user.id, e)
 
 @dp.message_handler(commands=["start"])
 @log_function("start_command")

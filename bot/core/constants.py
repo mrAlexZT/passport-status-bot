@@ -124,5 +124,8 @@ PUSH_NOTIFICATION_TITLE = "Оновлення заявки #{session_id}"
 PUSH_NOTIFICATION_ERROR = "Помилка при надсиланні сповіщення користувачу {telegram_id}: {error}"
 PUSH_NOTIFICATION_SEND_ERROR = "Помилка при надсиланні сповіщення через Telegram: {error}"
 
+# === COMMAND MESSAGES ===
+COMMAND_NOT_FOUND = "❌ Команду не знайдено.\n\nСкористайтеся /help для перегляду списку доступних команд."
+
 # === RATE LIMIT MESSAGES ===
 RATE_LIMIT_WAIT_MESSAGE = "Останнє оновлення було менше {minutes} хв тому, спробуйте пізніше."
