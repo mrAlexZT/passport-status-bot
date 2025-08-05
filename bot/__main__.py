@@ -22,6 +22,7 @@ from bot.bot_instance import (
 from bot.core.config import settings
 from bot.core.database import db
 from bot.core.constants import (
+    AUTHORS_MESSAGE,
     COMMAND_NOT_FOUND,
     VERSION_ERROR,
     VERSION_FORMAT,
@@ -51,6 +52,7 @@ dp = Dispatcher(
 ADMIN_COMMANDS = [
     types.BotCommand(command="/start", description="Почати роботу з ботом"),
     types.BotCommand(command="/help", description="Допомога"),
+    types.BotCommand(command="/authors", description="Інформація про авторів"),
     types.BotCommand(command="/policy", description="Політика бота та конфіденційність"),
     types.BotCommand(command="/cabinet", description="Персональний кабінет"),
     types.BotCommand(command="/link", description="Прив'язати ідентифікатор"),
@@ -155,6 +157,32 @@ async def time(message: types.Message):
         await message.answer(f"Server time is: {str(datetime.datetime.now())}")
     except Exception as e:
         log_error("Time command failed", message.from_user.id, e)
+
+
+@dp.message_handler(commands=["authors"])
+@log_function("authors_command")
+async def authors(message: types.Message):
+    """Show information about bot authors."""
+    try:
+        # Get current version
+        await update_version()
+        bot_version = await get_bot_version()
+        version_text = bot_version if bot_version else "N/A"
+        
+        # Format authors message
+        authors_text = AUTHORS_MESSAGE.format(
+            version=version_text,
+            repo_link=bot_link
+        )
+        
+        await message.answer(
+            authors_text,
+            parse_mode="Markdown",
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        log_error("Authors command failed", message.from_user.id, e)
+        await message.answer("❌ Помилка при отриманні інформації про авторів")
 
 
 @dp.message_handler(commands=["version"])

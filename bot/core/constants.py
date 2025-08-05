@@ -127,5 +127,30 @@ PUSH_NOTIFICATION_SEND_ERROR = "Помилка при надсиланні сп�
 # === COMMAND MESSAGES ===
 COMMAND_NOT_FOUND = "❌ Команду {command} не знайдено.\n\nСкористайтеся /help для перегляду списку доступних команд."
 
+# === AUTHORS INFO ===
+AUTHORS_MESSAGE = """👨‍💻 *Автори бота:*
+
+*1\. Автор ідеї та розробник:* Ihor Savenko
+   • [👨‍💻 GitHub](https://github.com/denver-code)
+   • [🌐 Website](https://ihorsavenko.com/)
+   • [✈️ Telegram](https://t.me/operatorSilence)
+   • [💬 Discord](https://discord.gg/operatorsilence)
+   • [📧 Email](mailto:contact@ihorsavenko.com)
+
+*2\. Розробник:* Oleksandr Shevchenko
+   • [👨‍💻 GitHub](https://github.com/mrAlexZT)
+
+*Про проект:*
+📦 *Версія:* v{version}
+📚 *Репозиторій:* [passport-status-bot]({repo_link})
+📝 *Ліцензія:* MIT
+
+*Технічна інформація:*
+🔧 Python, MongoDB, aiogram
+🤖 Telegram Bot API
+🔄 Асинхронна архітектура
+
+Дякуємо за використання нашого бота\! 🙏"""
+
 # === RATE LIMIT MESSAGES ===
 RATE_LIMIT_WAIT_MESSAGE = "Останнє оновлення було менше {minutes} хв тому, спробуйте пізніше."
