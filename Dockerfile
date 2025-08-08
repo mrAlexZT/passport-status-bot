@@ -16,8 +16,6 @@ RUN python3 -m venv $POETRY_VENV \
     && $POETRY_VENV/bin/pip install -U pip setuptools \
     && $POETRY_VENV/bin/pip install poetry==${POETRY_VERSION}
 
-RUN pip install playwright
-    && playwright install --with-deps chromium
 
 # Create a new stage from the base python image
 FROM python-base as mfa_passport_bot
@@ -41,6 +39,10 @@ RUN poetry config installer.max-workers 10
 # Install Dependencies
 RUN apt-get update && apt-get install -y build-essential libzbar-dev ffmpeg libsm6 libxext6 libgl1 \
     && poetry install --no-interaction --no-cache --without dev -vvv --no-ansi
+
+# Install Playwright into Poetry environment and browsers/deps
+RUN poetry run pip install --no-cache-dir playwright \
+    && poetry run playwright install --with-deps chromium
 
 # Copy Application
 COPY . /app
