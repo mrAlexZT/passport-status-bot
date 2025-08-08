@@ -5,6 +5,7 @@ from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from typing import Optional
+import time
 
 # Local application imports
 from bot.core.config import settings
@@ -140,7 +141,8 @@ def log_function(func_name: str = None):
 
             try:
                 result = await func(*args, **kwargs)
-                global_logger.info(f"Function '{name}' completed successfully", user_id)
+                global_logger.info(f"Function '{name}' completed successfully in {time.time() - start_time:.2f} seconds", user_id)
+                start_time = time.time()
                 return result
             except Exception as e:
                 # Don't log aiogram's CancelHandler as it's used for flow control
@@ -164,10 +166,10 @@ def log_function(func_name: str = None):
                     break
 
             global_logger.info(f"Function '{name}' called", user_id)
-
+            start_time = time.time()
             try:
                 result = func(*args, **kwargs)
-                global_logger.info(f"Function '{name}' completed successfully", user_id)
+                global_logger.info(f"Function '{name}' completed successfully in {time.time() - start_time:.2f} seconds ", user_id)
                 return result
             except Exception as e:
                 # Don't log aiogram's CancelHandler as it's used for flow control
