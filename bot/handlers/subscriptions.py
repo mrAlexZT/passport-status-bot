@@ -1,4 +1,5 @@
 from aiogram import Dispatcher
+from aiogram.filters import Command
 
 from bot.controllers.subscriptions import (
     subscribe,
@@ -13,11 +14,9 @@ from bot.core.logger import log_function
 
 @log_function("setup_subscriptions_handlers")
 def setup(dp: Dispatcher):
-    dp.register_message_handler(subscribe, commands=["subscribe"], state="*")
-    dp.register_message_handler(unsubscribe, commands=["unsubscribe"], state="*")
-    dp.register_message_handler(subscriptions, commands=["subscriptions"], state="*")
-    dp.register_message_handler(
-        manual_application_update, commands=["update"], state="*"
-    )
-    dp.register_message_handler(enable_push, commands=["push"], state="*")
-    dp.register_message_handler(dump_subscriptions, commands=["dump"], state="*")
+    dp.message.register(subscribe, Command("subscribe"))
+    dp.message.register(unsubscribe, Command("unsubscribe"))
+    dp.message.register(subscriptions, Command("subscriptions"))
+    dp.message.register(manual_application_update, Command("update"))
+    dp.message.register(enable_push, Command("push"))
+    dp.message.register(dump_subscriptions, Command("dump"))

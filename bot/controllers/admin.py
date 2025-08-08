@@ -238,17 +238,18 @@ async def cleanup_db(message: types.Message) -> None:
             return
         
         # Create inline keyboard
-        keyboard = InlineKeyboardMarkup(row_width=2)
-        keyboard.add(
-            InlineKeyboardButton(
-                ADMIN_CLEANUP_CONFIRM_BUTTON,
-                callback_data=f"cleanup_confirm_{len(users_to_delete)}_{len(subs_to_delete)}"
-            ),
-            InlineKeyboardButton(
-                ADMIN_CLEANUP_CANCEL_BUTTON,
-                callback_data="cleanup_cancel"
-            )
-        )
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=ADMIN_CLEANUP_CONFIRM_BUTTON,
+                    callback_data=f"cleanup_confirm_{len(users_to_delete)}_{len(subs_to_delete)}"
+                ),
+                InlineKeyboardButton(
+                    text=ADMIN_CLEANUP_CANCEL_BUTTON,
+                    callback_data="cleanup_cancel"
+                )
+            ]
+        ])
         
         # Show confirmation message with buttons
         await _message.edit_text(
