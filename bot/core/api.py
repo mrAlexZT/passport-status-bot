@@ -9,6 +9,7 @@ from fake_headers import Headers
 
 # Local application imports
 from bot.core.logger import log_error, log_warning, log_function
+from bot.core.playwright import playwright_check
 
 
 class Scraper:
@@ -30,7 +31,8 @@ class Scraper:
             if r.status_code != 200:
                 log_warning(f"Request to {target_url} with headers {headers} returned status code {r.status_code}")
                 log_warning(f"Response content: {r.content}")
-                return None
+                # Fallback to Playwright
+                return playwright_check(identifier, retrive_all=retrive_all)
 
             # If the request is successful, parse the response content
             if r.content:
@@ -51,7 +53,12 @@ class Scraper:
                     return status_list
 
                 return [status_list[-1]]
-            return None
+            # Fallback to Playwright in case content is empty/malformed
+            return playwright_check(identifier, retrive_all=retrive_all)
         except Exception as e:
-            log_error(f"Error checking status for {identifier}: {e}")
-            return None
+            log_warning(f"Cloudscraper failed for {identifier}, trying Playwright. Error: {e}")
+            try:
+                return playwright_check(identifier, retrive_all=retrive_all)
+            except Exception as e2:
+                log_error(f"Error checking status for {identifier} via Playwright: {e2}")
+                return None

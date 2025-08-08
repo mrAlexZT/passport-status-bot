@@ -16,6 +16,9 @@ RUN python3 -m venv $POETRY_VENV \
     && $POETRY_VENV/bin/pip install -U pip setuptools \
     && $POETRY_VENV/bin/pip install poetry==${POETRY_VERSION}
 
+RUN pip install playwright
+    && playwright install --with-deps chromium
+
 # Create a new stage from the base python image
 FROM python-base as mfa_passport_bot
 
