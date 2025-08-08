@@ -1,6 +1,7 @@
 # Standard library imports
 import os
 from datetime import datetime
+import random
 
 # Third party imports
 import cloudscraper
@@ -17,7 +18,7 @@ class Scraper:
     @log_function("check")
     def check(self, identifier, retrive_all=False):
         try:
-            target_url = f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}"
+            target_url = f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&rand={random.randint(10000, 1999999)}"
             headers = Headers().generate()
 
             r = self.scraper.get(
