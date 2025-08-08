@@ -183,7 +183,8 @@ def format_subscription_list(subscriptions: List, include_count: bool = True) ->
 
 async def show_typing_action(message: types.Message) -> None:
     """Show typing action - eliminates duplication."""
-    await message.answer_chat_action("typing")
+    from bot.bot_instance import bot
+    await bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
 
 async def show_typing_and_wait_message(message: types.Message, wait_text: str = None) -> Optional[types.Message]:

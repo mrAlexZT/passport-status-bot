@@ -1,22 +1,27 @@
 [tool.poetry]
 name = "mfa-passport-bot"
-version = "0.1.0"
+version = "0.2.1"
 description = ""
-authors = ["Ihor Savenko <csigorek@gmail.com>"]
-readme = "README.md"
+authors = ["Ihor Savenko <csigorek@gmail.com>", "Oleksandr Shevchenko <mr.AlexZT@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-pydantic = "^2.5.2"
-pydantic-settings = "^2.1.0"
-beanie = "^1.23.6"
+python = "^3.13"
+pydantic = "^2.11.7"
+pydantic-settings = "^2.10.1"
+beanie = "^2.0.0"
+motor = "^3.4.0"
 fake-headers = "^1.0.2"
 cloudscraper = "^1.2.71"
-aiogram = "2.23.1"
-apscheduler = "^3.10.4"
-pillow = "^10.1.0"
-qreader = "^3.12"
-matplotlib = "*"
+aiogram = "^3.21.0"
+apscheduler = "^3.11.0"
+pillow = "^11.3.0"
+qreader = "^3.16"
+matplotlib = "^3.10.5"
+aiohttp = "^3.12.15"
+playwright = "^1.54.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
 
 [build-system]
 requires = ["poetry-core"]

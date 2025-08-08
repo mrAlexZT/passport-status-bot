@@ -66,13 +66,13 @@ ADMIN_CLEANUP_CONFIRM = """*⚠️ Знайдено невалідні дані:
 *Підписки для видалення:* `{subs}`
 
 *Деталі:*
-• Користувачі без telegram\_id: `{users_no_id}`
+• Користувачі без telegram\\_id: `{users_no_id}`
 • Користувачі з невалідними даними: `{users_invalid}`
-• Підписки без telegram\_id: `{subs_no_id}`
-• Підписки без session\_id: `{subs_no_session}`
+• Підписки без telegram\\_id: `{subs_no_id}`
+• Підписки без session\\_id: `{subs_no_session}`
 • Підписки від видалених користувачів: `{subs_orphaned}`
 
-⚠️ *Увага: Ця дія незворотня\!*"""
+⚠️ *Увага: Ця дія незворотня\\!*"""
 
 ADMIN_CLEANUP_CONFIRM_BUTTON = "✅ Підтвердити видалення"
 ADMIN_CLEANUP_CANCEL_BUTTON = "❌ Скасувати"
@@ -87,10 +87,10 @@ ADMIN_CLEANUP_RESULT = """*✅ Очищення завершено:*
 *Видалено підписок:* `{subs}`
 
 *Деталі:*
-• Користувачі без telegram\_id: `{users_no_id}`
+• Користувачі без telegram\\_id: `{users_no_id}`
 • Користувачі з невалідними даними: `{users_invalid}`
-• Підписки без telegram\_id: `{subs_no_id}`
-• Підписки без session\_id: `{subs_no_session}`
+• Підписки без telegram\\_id: `{subs_no_id}`
+• Підписки без session\\_id: `{subs_no_session}`
 • Підписки від видалених користувачів: `{subs_orphaned}`"""
 ADMIN_CLEANUP_ERROR = "❌ Помилка при очищенні бази даних. Перевірте логи."
 ADMIN_CLEANUP_NOTHING = "*✅ База даних не містить невалідних даних.*"

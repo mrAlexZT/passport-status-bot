@@ -9,8 +9,7 @@ from bot.core.constants import (
 )
 from bot.core.logger import log_error, log_function, log_info
 
-loop = asyncio.get_event_loop()
-bot = Bot(settings.TOKEN, loop=loop)
+bot = Bot(token=settings.TOKEN)
 
 # Default values in case GitHub API is unavailable
 DEFAULT_VERSION = None
@@ -115,6 +114,4 @@ async def get_bot_version():
     """Get current bot version."""
     return bot_version if bot_version else DEFAULT_VERSION
 
-# Schedule version updates
-loop.create_task(update_version())  # Initial update
-loop.create_task(version_check_loop())  # Periodic updates
+# Note: Version updates will be scheduled through the main application's async context

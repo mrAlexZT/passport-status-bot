@@ -13,8 +13,7 @@ async def notify_admin(text: str):
     try:
         bot = Bot(token=token)
         await bot.send_message(chat_id=admin_id, text=text)
-        session = await bot.get_session()
-        await session.close()
+        await bot.session.close()
     except Exception as e:
         # Optionally log this error somewhere
         pass

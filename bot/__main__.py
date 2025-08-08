@@ -7,16 +7,16 @@ from pathlib import Path
 
 # Third party imports
 import matplotlib.pyplot as plt
-from aiogram import types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import Dispatcher
-from aiogram.utils import executor
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command
+from aiogram.types import FSInputFile
+from aiogram.fsm.storage.memory import MemoryStorage
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from beanie import init_beanie
 
 # Local application imports
 from bot.bot_instance import (
-    bot, loop, bot_version, bot_link,
+    bot, bot_version, bot_link,
     update_version, get_bot_version
 )
 from bot.core.config import settings
@@ -42,11 +42,7 @@ from bot.middlewares.debug import LoggerMiddleware
 
 scheduler = AsyncIOScheduler()
 
-dp = Dispatcher(
-    bot,
-    loop=loop,
-    storage=MemoryStorage(),
-)
+dp = Dispatcher(storage=MemoryStorage())
 
 # --- Command Constants ---
 ADMIN_COMMANDS = [
@@ -102,7 +98,7 @@ def read_log_tail(log_path: Path, lines: int = 50) -> str:
 
 
 @log_function("startup")
-async def startup(dp: Dispatcher):
+async def startup():
     try:
         log_info("Bot startup initiated")
         # Use default user commands (non-admin) for initial setup
@@ -131,7 +127,7 @@ async def startup(dp: Dispatcher):
 
 
 @log_function("shutdown")
-async def shutdown(dp: Dispatcher):
+async def shutdown():
     try:
         log_info("Bot shutdown initiated")
         await notify_admin(f"🛑 Bot stopped at {datetime.datetime.now().isoformat()}")
@@ -140,7 +136,7 @@ async def shutdown(dp: Dispatcher):
         log_error("Bot shutdown failed", exception=e)
 
 
-@dp.message_handler(commands=["ping"])
+@dp.message(Command("ping"))
 @rate_limit(5, "ping")
 @log_function("ping_command")
 async def ping(message: types.Message):
@@ -150,7 +146,7 @@ async def ping(message: types.Message):
         log_error("Ping command failed", message.from_user.id, e)
 
 
-@dp.message_handler(commands=["time"])
+@dp.message(Command("time"))
 @log_function("time_command")
 async def time(message: types.Message):
     try:
@@ -159,7 +155,7 @@ async def time(message: types.Message):
         log_error("Time command failed", message.from_user.id, e)
 
 
-@dp.message_handler(commands=["authors"])
+@dp.message(Command("authors"))
 @log_function("authors_command")
 async def authors(message: types.Message):
     """Show information about bot authors."""
@@ -185,7 +181,7 @@ async def authors(message: types.Message):
         await message.answer("❌ Помилка при отриманні інформації про авторів")
 
 
-@dp.message_handler(commands=["version"])
+@dp.message(Command("version"))
 @log_function("version_command")
 async def version(message: types.Message):
     """Show bot version information."""
@@ -212,7 +208,7 @@ async def version(message: types.Message):
         await message.answer(VERSION_UPDATE_ERROR)
 
 
-@dp.message_handler(commands=["toggle_logging"])
+@dp.message(Command("toggle_logging"))
 async def toggle_logging(message: types.Message):
     """Admin command to enable/disable logging"""
     try:
@@ -223,7 +219,7 @@ async def toggle_logging(message: types.Message):
         await message.answer("❌ Помилка при зміні налаштувань логування")
 
 
-@dp.message_handler(commands=["logs"])
+@dp.message(Command("logs"))
 async def get_logs(message: types.Message):
     """Admin command to get recent logs"""
     if not await admin_permission_check(message):
@@ -269,7 +265,7 @@ async def set_user_commands(user_id: int) -> None:
         log_error(f"Failed to set user commands for {user_id}", user_id, e)
 
 
-@dp.message_handler(lambda message: message.text.startswith('/') and not message.text.split()[0].split('@')[0] in [cmd.command for cmd in ADMIN_COMMANDS])
+@dp.message(lambda message: message.text.startswith('/') and not message.text.split()[0].split('@')[0] in [cmd.command for cmd in ADMIN_COMMANDS])
 @log_function("command_not_found")
 async def command_not_found(message: types.Message):
     """Handle unrecognized commands."""
@@ -278,7 +274,7 @@ async def command_not_found(message: types.Message):
     except Exception as e:
         log_error("Command not found handler failed", message.from_user.id, e)
 
-@dp.message_handler(commands=["start"])
+@dp.message(Command("start"))
 @log_function("start_command")
 async def start(message: types.Message):
     try:
@@ -330,7 +326,7 @@ def format_broadcast_result(success: int, blocked: int, error: int) -> str:
         f"⚠️ Помилки: {error}"
     )
 
-@dp.message_handler(commands=["broadcast"])
+@dp.message(Command("broadcast"))
 @log_function("broadcast_command")
 async def broadcast(message: types.Message) -> None:
     """Admin command to broadcast a message to all users except admins and excluded."""
@@ -360,14 +356,13 @@ async def broadcast(message: types.Message) -> None:
         await message.answer("❌ Помилка при розсилці")
 
 
-@dp.message_handler(commands=["get_out_txt"])
+@dp.message(Command("get_out_txt"))
 @log_function("get_out_txt_command")
 async def get_out_txt(message: types.Message):
     if not await admin_permission_check(message):
         return
     try:
-        with open("out.txt", "r", encoding='utf-8') as f:
-            await message.answer_document(types.InputFile(f, filename="out.txt"))
+        await message.answer_document(FSInputFile("out.txt"))
     except FileNotFoundError:
         await message.answer("❌ Файл out.txt не знайдено")
     except Exception as e:
@@ -375,7 +370,7 @@ async def get_out_txt(message: types.Message):
         await message.answer("❌ Помилка при отриманні файлу")
 
 
-@dp.message_handler(commands=["stats"])
+@dp.message(Command("stats"))
 @log_function("stats_command")
 async def stats(message: types.Message):
     if not await admin_permission_check(message):
@@ -413,7 +408,7 @@ async def stats(message: types.Message):
         await message.answer("❌ Помилка при отриманні статистики")
 
 
-@dp.message_handler(commands=["stats_graph"])
+@dp.message(Command("stats_graph"))
 @log_function("stats_graph_command")
 async def stats_graph(message: types.Message):
     if not await admin_permission_check(message):
@@ -449,8 +444,12 @@ async def stats_graph(message: types.Message):
         buf.seek(0)
 
         await progress_msg.delete()
+        
+        # Convert BytesIO to BufferedInputFile for aiogram v3 compatibility
+        from aiogram.types import BufferedInputFile
+        photo_file = BufferedInputFile(buf.getvalue(), filename="stats_graph.png")
         await message.answer_photo(
-            photo=types.InputFile(buf, filename="stats_graph.png"),
+            photo=photo_file,
             caption=f"📊 Графік запитів за період\n📅 Всього днів: {len(days_sorted)}\n📨 Всього запитів: {sum(counts)}"
         )
 
@@ -462,13 +461,13 @@ async def stats_graph(message: types.Message):
         await message.answer("❌ Помилка при створенні графіку")
 
 
-def main():
+async def main_async():
     try:
         log_info("Initializing bot")
 
         # Setup middlewares
-        dp.middleware.setup(LoggerMiddleware())
-        dp.middleware.setup(ThrottlingMiddleware())
+        dp.message.middleware(LoggerMiddleware())
+        dp.message.middleware(ThrottlingMiddleware())
 
         # Setup scheduler
         scheduler.add_job(
@@ -482,21 +481,29 @@ def main():
         # Setup handlers
         handlers_setup.setup(dp)
 
+        # Run startup
+        await startup()
+
         log_info("Starting bot polling")
-        executor.start_polling(
-            dp,
-            loop=loop,
-            skip_updates=True,
-            on_startup=startup,
-            on_shutdown=shutdown,
-        )
+        await dp.start_polling(bot, skip_updates=True)
+        
     except Exception as e:
         log_error("Bot polling failed", exception=e)
         try:
-            loop.run_until_complete(notify_admin(f"❗️ Bot error: {e}"))
+            await notify_admin(f"❗️ Bot error: {e}")
         except:
             pass  # Don't let notification errors crash the app
         raise
+    finally:
+        await shutdown()
+
+def main():
+    try:
+        asyncio.run(main_async())
+    except KeyboardInterrupt:
+        log_info("Bot stopped by user")
+    except Exception as e:
+        log_error("Bot failed", exception=e)
 
 
 if __name__ == "__main__":
