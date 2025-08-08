@@ -241,16 +241,16 @@ async def get_logs(message: types.Message):
 
         if today_log.exists():
             recent_content = read_log_tail(today_log, 50)
-            if len(recent_content) > 4000:  # Telegram message limit
-                recent_content = recent_content[-4000:]
+            if len(recent_content) > 2000:  # Telegram message limit
+                recent_content = recent_content[-2000:]
 
             await message.answer(f"📊 Останні записи логів:\n\n```\n{recent_content}\n```", parse_mode="Markdown")
 
         if error_log.exists():
             error_content = read_log_tail(error_log, 20)
             if error_content.strip():
-                if len(error_content) > 4000:
-                    error_content = error_content[-4000:]
+                if len(error_content) > 2000:
+                    error_content = error_content[-2000:]
 
                 await message.answer(f"🚨 Останні помилки:\n\n```\n{error_content}\n```", parse_mode="Markdown")
             else:

@@ -135,7 +135,6 @@ AUTHORS_MESSAGE = """👨‍💻 *Автори бота:*
    • [🌐 Website](https://ihorsavenko.com/)
    • [✈️ Telegram](https://t.me/operatorSilence)
    • [💬 Discord](https://discord.gg/operatorsilence)
-   • [📧 Email](mailto:contact@ihorsavenko.com)
 
 *2. Розробник:* Oleksandr Shevchenko
    • [👨‍💻 GitHub](https://github.com/mrAlexZT)
