@@ -6,6 +6,9 @@ import json as _json
 import random
 from concurrent.futures import ThreadPoolExecutor
 import io
+import os
+import shutil
+import tempfile
 
 # Third party imports
 from playwright.async_api import async_playwright
@@ -73,6 +76,8 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
                 "--disable-dev-shm-usage",
             ],
         )
+
+        video_tmpdir = tempfile.mkdtemp(prefix="pwvideo_")
         context = await browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -82,6 +87,8 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
             viewport={"width": 1280, "height": 800},
             locale="en-US",
             timezone_id="Europe/Kiev",
+            record_video_dir=video_tmpdir,
+            record_video_size={"width": 1280, "height": 720},
         )
         await _apply_stealth_to_context(context)
         page = await context.new_page()
@@ -97,6 +104,11 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
                 "Sec-Fetch-Site": "same-origin",
             }
         )
+
+        # For admin notify on error
+        error_for_admin = False
+        screenshot_bytes = None
+        video_path = None
 
         try:
             resp = await page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
@@ -139,44 +151,82 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
             except Exception as _:
                 # Fallback to response body parsing
                 if not resp or resp.status != 200:
-                    # Capture screenshot and try to notify admin
+                    error_for_admin = True
                     try:
                         screenshot_bytes = await page.screenshot(full_page=True)
-                        from aiogram import Bot, types
-                        from bot.core.config import settings
-
-                        token = getattr(settings, "TOKEN", None)
-                        admin_id = getattr(settings, "ADMIN_ID", None)
-                        if token and admin_id:
-                            bot_tmp = Bot(token=token)
-                            input_file = types.InputFile(io.BytesIO(screenshot_bytes), filename="playwright_error.png")
-                            await bot_tmp.send_photo(chat_id=admin_id, photo=input_file, caption=f"Playwright fetch failed for {identifier}")
-                            session = await bot_tmp.get_session()
-                            await session.close()
-                    except Exception as notify_err:
-                        log_warning(f"Failed to notify admin with screenshot: {notify_err}")
-                    return None
-
-                try:
-                    raw_text = await resp.text()
-                    raw_json = _json.loads(raw_text)
-                except Exception:
+                    except Exception:
+                        screenshot_bytes = None
+                else:
                     try:
-                        text = await page.evaluate("() => document.body.innerText")
-                        raw_json = _json.loads(text)
-                    except Exception as json_fallback_err:
-                        log_error(
-                            f"Failed to parse response as JSON for {identifier}",
-                            exception=json_fallback_err,
-                        )
-                        return None
+                        raw_text = await resp.text()
+                        raw_json = _json.loads(raw_text)
+                    except Exception:
+                        try:
+                            text = await page.evaluate("() => document.body.innerText")
+                            raw_json = _json.loads(text)
+                        except Exception as json_fallback_err:
+                            error_for_admin = True
+                            log_error(
+                                f"Failed to parse response as JSON for {identifier}",
+                                exception=json_fallback_err,
+                            )
         finally:
+            # Retrieve video path after closing context (video is finalized on close)
             try:
                 await context.close()
             except Exception:
                 pass
             try:
+                # After context close page.video.path() should be available
+                if hasattr(page, "video") and page.video:
+                    try:
+                        video_path = await page.video.path()
+                    except Exception:
+                        video_path = None
+            except Exception:
+                video_path = None
+            try:
                 await browser.close()
+            except Exception:
+                pass
+
+        # Notify admin if needed
+        if error_for_admin:
+            try:
+                from aiogram import Bot, types
+                from bot.core.config import settings
+
+                token = getattr(settings, "TOKEN", None)
+                admin_id = getattr(settings, "ADMIN_ID", None)
+                if token and admin_id:
+                    bot_tmp = Bot(token=token)
+                    if screenshot_bytes:
+                        photo_file = types.InputFile(io.BytesIO(screenshot_bytes), filename="playwright_error.png")
+                        await bot_tmp.send_photo(chat_id=admin_id, photo=photo_file, caption=f"Playwright fetch failed for {target_url}")
+
+                    if video_path and os.path.exists(video_path):
+                        try:
+                            with open(video_path, "rb") as vf:
+                                video_bytes = vf.read()
+                            video_file = types.InputFile(io.BytesIO(video_bytes), filename="playwright_error.webm")
+                            await bot_tmp.send_video(chat_id=admin_id, video=video_file, caption="Playwright session video")
+                        except Exception as video_err:
+                            log_warning(f"Failed to send video to admin: {video_err}")
+
+                    session = await bot_tmp.get_session()
+                    await session.close()
+            except Exception as notify_err:
+                log_warning(f"Failed to notify admin: {notify_err}")
+            finally:
+                # Cleanup temp video directory after notify
+                try:
+                    shutil.rmtree(video_tmpdir, ignore_errors=True)
+                except Exception:
+                    pass
+        else:
+            # No error: cleanup temp directory
+            try:
+                shutil.rmtree(video_tmpdir, ignore_errors=True)
             except Exception:
                 pass
 
