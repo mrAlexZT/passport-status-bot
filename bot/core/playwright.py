@@ -212,6 +212,11 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
                             await bot_tmp.send_video(chat_id=admin_id, video=video_file, caption="Playwright session video")
                         except Exception as video_err:
                             log_warning(f"Failed to send video to admin: {video_err}")
+                        finally:
+                            try:
+                                os.remove(video_path)
+                            except Exception:
+                                pass
 
                     session = await bot_tmp.get_session()
                     await session.close()
