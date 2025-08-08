@@ -17,7 +17,11 @@ class Scraper:
         self.scraper = cloudscraper.create_scraper()
 
     @log_function("check")
-    def check(self, identifier, retrive_all=False):
+    def check(self, identifier, retrive_all=False, use_playwright=True):
+
+        if use_playwright:
+            return playwright_check(identifier, retrive_all=retrive_all)
+
         try:
             target_url = f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&rand={random.randint(10000, 1999999)}"
             headers = Headers().generate()
@@ -31,8 +35,6 @@ class Scraper:
             if r.status_code != 200:
                 log_warning(f"Request to {target_url} with headers {headers} returned status code {r.status_code}")
                 log_warning(f"Response content: {r.content}")
-                # Fallback to Playwright
-                return playwright_check(identifier, retrive_all=retrive_all)
 
             # If the request is successful, parse the response content
             if r.content:

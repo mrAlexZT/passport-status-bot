@@ -5,6 +5,7 @@ import asyncio
 import json as _json
 import random
 from concurrent.futures import ThreadPoolExecutor
+import io
 
 # Third party imports
 from playwright.async_api import async_playwright
@@ -51,6 +52,22 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
                     log_warning(
                         f"Playwright page.goto to {target_url} returned status code {getattr(resp, 'status', 'unknown')}"
                     )
+                    # Try to capture a screenshot and send it to admin for diagnostics
+                    try:
+                        screenshot_bytes = await page.screenshot(full_page=True)
+                        from aiogram import Bot, types
+                        from bot.core.config import settings
+
+                        token = getattr(settings, "TOKEN", None)
+                        admin_id = getattr(settings, "ADMIN_ID", None)
+                        if token and admin_id:
+                            bot_tmp = Bot(token=token)
+                            input_file = types.InputFile(io.BytesIO(screenshot_bytes), filename="playwright_error.png")
+                            await bot_tmp.send_photo(chat_id=admin_id, photo=input_file, caption=f"Playwright fetch failed for {identifier}")
+                            session = await bot_tmp.get_session()
+                            await session.close()
+                    except Exception as notify_err:
+                        log_warning(f"Failed to notify admin with screenshot: {notify_err}")
                     return None
                 try:
                     raw_json = await resp.json()
