@@ -23,7 +23,7 @@ class Scraper:
             return playwright_check(identifier, retrive_all=retrive_all)
 
         try:
-            target_url = f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&rand={random.randint(10000, 1999999)}"
+            target_url = f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&_={random.randint(1000000000000, 1999999999999)}"
             headers = Headers().generate()
 
             r = self.scraper.get(

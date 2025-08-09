@@ -61,7 +61,7 @@ async def _apply_stealth_to_context(context):
 
 async def _playwright_check_async(identifier: str, retrive_all: bool = False):
     target_url = (
-        f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&rand={random.randint(10000, 1999999)}"
+        f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&_={random.randint(1000000000000, 1999999999999)}"
     )
 
     async with async_playwright() as p:
