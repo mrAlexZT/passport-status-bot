@@ -117,10 +117,11 @@ async def _test_proxy_connection(proxy_url: str) -> bool:
         bool: True if proxy is working, False otherwise
     """
     TEST_URL = "https://httpbin.org/ip"
-    TEST_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Test/1.0)"}
     TIMEOUT = 30
     
     proxy_connector = aiohttp.TCPConnector(force_close=True, limit=1)
+
+    log_info(f"Testing proxy {proxy_url}") # TODO: remove
     
     try:
         log_info(">>> 1") # TODO: remove
@@ -133,8 +134,7 @@ async def _test_proxy_connection(proxy_url: str) -> bool:
             log_info(">>> 3") # TODO: remove
             async with session.get(
                 TEST_URL,
-                proxy=proxy_url,
-                headers=TEST_HEADERS
+                proxy=proxy_url
             ) as resp:
                 log_info(">>> 4") # TODO: remove
                 if resp.status != 200:
