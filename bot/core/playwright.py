@@ -216,6 +216,11 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
                 if not resp or resp.status != 200:
                     error_for_admin = True
                     try:
+                        # Click reveal button before screenshot to unhide IP address
+                        btn = await page.query_selector('#cf-footer-ip-reveal')
+                        if btn is not None:
+                            await btn.click()
+                            await asyncio.sleep(1)
                         screenshot_bytes = await page.screenshot(full_page=True)
                     except Exception:
                         screenshot_bytes = None
