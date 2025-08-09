@@ -123,26 +123,30 @@ async def _test_proxy_connection(proxy_url: str) -> bool:
     proxy_connector = aiohttp.TCPConnector(force_close=True, limit=1)
     
     try:
+        log_info(">>> 1") # TODO: remove
         timeout = aiohttp.ClientTimeout(total=TIMEOUT)
-        
+        log_info(">>> 2") # TODO: remove
         async with aiohttp.ClientSession(
             timeout=timeout,
             connector=proxy_connector
         ) as session:
+            log_info(">>> 3") # TODO: remove
             async with session.get(
                 TEST_URL,
                 proxy=proxy_url,
                 headers=TEST_HEADERS
             ) as resp:
+                log_info(">>> 4") # TODO: remove
                 if resp.status != 200:
                     log_warning(f"Proxy {proxy_url} returned status {resp.status}")
                     return False
-                    
+                log_info(">>> 5") # TODO: remove
                 data = await resp.json()
+                log_info(">>> 6") # TODO: remove
                 if "origin" not in data:
                     log_warning(f"Proxy {proxy_url} returned invalid response")
                     return False
-                    
+                log_info(">>> 7") # TODO: remove
                 log_info(f"Proxy {proxy_url} working, IP: {data['origin']}")
                 return True
                 
