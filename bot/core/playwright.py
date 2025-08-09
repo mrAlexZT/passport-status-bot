@@ -60,10 +60,10 @@ async def _apply_stealth_to_context(context):
     )
 
 
-async def _get_random_public_proxy_option() -> dict:
+async def _get_public_proxies_list() -> list[str]:
     """
-    Fetch a random public HTTP proxy from multiple sources. Returns Playwright
-    proxy options dict: {"server": "http://host:port"} or None if unavailable.
+    Fetch all available public HTTP proxies from multiple sources.
+    Returns list of proxy URLs.
     """
     sources = [
         "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=3000&country=all&ssl=all&anonymity=all",
@@ -100,12 +100,65 @@ async def _get_random_public_proxy_option() -> dict:
             else:
                 proxies.append(f"http://{candidate}")
 
-    if not proxies:
-        return None
-
+    # Shuffle the list to randomize order
     import random as _rnd
-    proxy_url = _rnd.choice(proxies)
-    return {"server": proxy_url}
+    _rnd.shuffle(proxies)
+    return proxies
+
+
+async def _test_proxy_connection(browser, identifier: str, proxy_options: dict = None) -> bool:
+    """
+    Test if proxy connection is working by checking IP on 2ip.ua
+    Returns True if connection is successful, False otherwise.
+    """
+    try:
+        video_tmpdir = tempfile.mkdtemp(prefix="pwtest_")
+        context = await browser.new_context(
+            user_agent=(
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/125.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 800},
+            locale="en-US",
+            timezone_id="Europe/Kiev",
+            record_video_dir=video_tmpdir,
+            record_video_size={"width": 1280, "height": 720},
+        )
+        await _apply_stealth_to_context(context)
+        page = await context.new_page()
+        
+        # Test IP check
+        ip_check_resp = await page.goto("https://2ip.ua", wait_until="domcontentloaded", timeout=10000)
+        if ip_check_resp and ip_check_resp.status == 200:
+            try:
+                current_ip = await page.evaluate("""
+                    () => {
+                        const ipElement = document.querySelector('.ip') || 
+                                        document.querySelector('[data-ip]') ||
+                                        document.querySelector('#d_clip_button span');
+                        return ipElement ? ipElement.textContent.trim() : 'Unknown';
+                    }
+                """)
+                log_info(f"Connection test successful for session {identifier}. IP: {current_ip}")
+                return True
+            except Exception:
+                pass
+        
+        return False
+        
+    except Exception as e:
+        log_warning(f"Connection test failed: {e}")
+        return False
+    finally:
+        try:
+            await context.close()
+        except Exception:
+            pass
+        try:
+            shutil.rmtree(video_tmpdir, ignore_errors=True)
+        except Exception:
+            pass
 
 
 async def _playwright_check_async(identifier: str, retrive_all: bool = False):
@@ -113,32 +166,68 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&_={random.randint(1000000000000, 1999999999999)}"
     )
 
+    # Configuration variables
+    MAX_PROXY_RETRIES = int(os.getenv("PLAYWRIGHT_MAX_PROXY_RETRIES", "20"))
+    
     async with async_playwright() as p:
         raw_json = None
 
-        # Always use a real browser context to better handle Cloudflare
-        # Try with a random public proxy first; fall back to direct if launch fails
-        proxy_options = await _get_random_public_proxy_option()
+        # Get list of available proxies
+        available_proxies = await _get_public_proxies_list()
+        log_info(f"Found {len(available_proxies)} proxies to try")
+
         browser = None
+        context = None
+        page = None
         last_error = None
-        for attempt in range(2):
+        
+        # Try proxies first, then direct connection
+        proxy_attempts = min(MAX_PROXY_RETRIES, len(available_proxies)) if available_proxies else 0
+        total_attempts = proxy_attempts + 1  # +1 for direct connection
+        
+        for attempt in range(total_attempts):
+            proxy_options = None
+            if attempt < proxy_attempts:
+                proxy_url = available_proxies[attempt]
+                proxy_options = {"server": proxy_url}
+                log_info(f"Attempt {attempt + 1}/{total_attempts}: Using proxy {proxy_url}")
+            else:
+                log_info(f"Attempt {attempt + 1}/{total_attempts}: Using direct connection")
+
             try:
+                # Launch browser
                 browser = await p.chromium.launch(
                     headless=True,
-                    proxy=proxy_options if attempt == 0 else None,
+                    proxy=proxy_options,
                     args=[
                         "--disable-blink-features=AutomationControlled",
                         "--no-sandbox",
                         "--disable-dev-shm-usage",
                     ],
                 )
-                break
+                
+                # Test connection with IP check
+                test_success = await _test_proxy_connection(browser, identifier, proxy_options)
+                if test_success:
+                    log_info(f"Successfully connected with {'proxy' if proxy_options else 'direct connection'}")
+                    break
+                else:
+                    log_warning(f"Connection test failed for {'proxy' if proxy_options else 'direct connection'}")
+                    await browser.close()
+                    browser = None
+                    
             except Exception as e:
                 last_error = e
-                if attempt == 0:
-                    log_warning(f"Chromium launch failed with proxy, retrying without proxy: {e}")
+                log_warning(f"Browser launch failed for attempt {attempt + 1}: {e}")
+                if browser:
+                    try:
+                        await browser.close()
+                    except Exception:
+                        pass
+                    browser = None
+        
         if browser is None:
-            raise last_error or RuntimeError("Failed to launch Chromium")
+            raise last_error or RuntimeError("Failed to launch Chromium with any proxy or direct connection")
 
         video_tmpdir = tempfile.mkdtemp(prefix="pwvideo_")
         context = await browser.new_context(
@@ -173,72 +262,7 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         screenshot_bytes = None
         video_path = None
 
-        # Check IP address first to verify proxy is working
-        try:
-            ip_check_resp = await page.goto("https://2ip.ua", wait_until="domcontentloaded", timeout=15000)
-            if ip_check_resp and ip_check_resp.status == 200:
-                try:
-                    # Get the IP from 2ip.ua page
-                    current_ip = await page.evaluate("""
-                        () => {
-                            const ipElement = document.querySelector('.ip') || 
-                                            document.querySelector('[data-ip]') ||
-                                            document.querySelector('#d_clip_button span');
-                            return ipElement ? ipElement.textContent.trim() : 'Unknown';
-                        }
-                    """)
-                    log_info(f"Current IP for session {identifier}: {current_ip}")
-                except Exception as ip_err:
-                    log_warning(f"Failed to extract IP from 2ip.ua: {ip_err}")
-            else:
-                log_warning(f"Failed to load 2ip.ua, status: {getattr(ip_check_resp, 'status', 'unknown')}")
-        except Exception as ip_check_err:
-            log_warning(f"IP check failed: {ip_check_err}")
-            # If IP check fails due to proxy issues, fall back to direct connection
-            log_info(f"Retrying with direct connection due to proxy failure")
-            try:
-                await context.close()
-            except Exception:
-                pass
-            try:
-                await browser.close()
-            except Exception:
-                pass
-            # Restart browser without proxy
-            browser = await p.chromium.launch(
-                headless=True,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                ],
-            )
-            context = await browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/125.0.0.0 Safari/537.36"
-                ),
-                viewport={"width": 1280, "height": 800},
-                locale="en-US",
-                timezone_id="Europe/Kiev",
-                record_video_dir=video_tmpdir,
-                record_video_size={"width": 1280, "height": 720},
-            )
-            await _apply_stealth_to_context(context)
-            page = await context.new_page()
-            await page.set_extra_http_headers(
-                {
-                    "Accept": "application/json, text/javascript, */*; q=0.01",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "Cache-Control": "no-cache",
-                    "Pragma": "no-cache",
-                    "Referer": "https://passport.mfa.gov.ua/",
-                    "Sec-Fetch-Dest": "empty",
-                    "Sec-Fetch-Mode": "cors",
-                    "Sec-Fetch-Site": "same-origin",
-                }
-            )
+        # Connection already tested and working, proceed directly
 
         try:
             resp = await page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
