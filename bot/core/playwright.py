@@ -165,9 +165,6 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
     target_url = (
         f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&_={random.randint(1000000000000, 1999999999999)}"
     )
-
-    # Configuration variables
-    MAX_PROXY_RETRIES = int(os.getenv("PLAYWRIGHT_MAX_PROXY_RETRIES", "20"))
     
     async with async_playwright() as p:
         raw_json = None
@@ -182,7 +179,7 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         last_error = None
         
         # Try proxies first, then direct connection
-        proxy_attempts = min(MAX_PROXY_RETRIES, len(available_proxies)) if available_proxies else 0
+        proxy_attempts = len(available_proxies)
         total_attempts = proxy_attempts + 1  # +1 for direct connection
         
         for attempt in range(total_attempts):
