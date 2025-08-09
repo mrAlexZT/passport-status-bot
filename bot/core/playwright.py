@@ -66,17 +66,14 @@ async def _get_public_proxies_list() -> list[str]:
     Returns list of proxy URLs (limited to reduce connection attempts).
     """
     sources = [
-        "https://api.proxyscrape.com/v4/free-proxy-list/get?request=get_proxies&country=ua&protocol=http&skip=0&proxy_format=ipport&format=text&anonymity=Elite&timeout=20000",
-        #"https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=3000&country=all&ssl=all&anonymity=all",
-        #"https://www.proxy-list.download/api/v1/get?type=http",
-        #"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+        "https://api.proxyscrape.com/v4/free-proxy-list/get?request=get_proxies&country=ua&protocol=http&skip=0&proxy_format=protocolipport&format=text&anonymity=Elite&timeout=20000",
     ]
 
     proxies: list[str] = []
 
     async def fetch_text(url: str) -> str:
         try:
-            timeout = aiohttp.ClientTimeout(total=5)  # Reduced timeout
+            timeout = aiohttp.ClientTimeout(total=30)
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(url, headers={"Accept": "text/plain"}) as resp:
                     if resp.status == 200:
@@ -104,7 +101,7 @@ async def _get_public_proxies_list() -> list[str]:
     # Shuffle and limit to reasonable number
     import random as _rnd
     _rnd.shuffle(proxies)
-    return proxies[:5]  # Limit to max 5 proxies
+    return proxies[:1000]  # Limit to max 1000 proxies
 
 
 async def _test_proxy_connection(proxy_url: str) -> bool:
