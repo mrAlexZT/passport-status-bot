@@ -194,6 +194,51 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
                 log_warning(f"Failed to load 2ip.ua, status: {getattr(ip_check_resp, 'status', 'unknown')}")
         except Exception as ip_check_err:
             log_warning(f"IP check failed: {ip_check_err}")
+            # If IP check fails due to proxy issues, fall back to direct connection
+            log_info(f"Retrying with direct connection due to proxy failure")
+            try:
+                await context.close()
+            except Exception:
+                pass
+            try:
+                await browser.close()
+            except Exception:
+                pass
+            # Restart browser without proxy
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                ],
+            )
+            context = await browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/125.0.0.0 Safari/537.36"
+                ),
+                viewport={"width": 1280, "height": 800},
+                locale="en-US",
+                timezone_id="Europe/Kiev",
+                record_video_dir=video_tmpdir,
+                record_video_size={"width": 1280, "height": 720},
+            )
+            await _apply_stealth_to_context(context)
+            page = await context.new_page()
+            await page.set_extra_http_headers(
+                {
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache",
+                    "Referer": "https://passport.mfa.gov.ua/",
+                    "Sec-Fetch-Dest": "empty",
+                    "Sec-Fetch-Mode": "cors",
+                    "Sec-Fetch-Site": "same-origin",
+                }
+            )
 
         try:
             resp = await page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
