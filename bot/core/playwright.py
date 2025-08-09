@@ -108,7 +108,7 @@ async def _get_public_proxies_list() -> list[str]:
 async def _test_proxy_connection(proxy_urls: list[str], max_proxies_checked: int = 10, timeout: float = 30000) -> list[str]:
 
     log_info(f"Testing {len(proxy_urls)} proxies")
-    log_info(f"Proxies: {proxy_urls}")
+    log_info(f"Max proxies checked: {max_proxies_checked}")
 
     test_url = "https://httpbin.org/ip"
     working_proxies = []
@@ -245,12 +245,7 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         log_info(f"Found {len(available_proxies)} proxies to test")
         
         # Quick proxy testing
-        working_proxies = []
-        for proxy_url in available_proxies[:MAX_PROXY_ATTEMPTS]:
-            if await _test_proxy_connection(proxy_url):
-                working_proxies.append(proxy_url)
-                if len(working_proxies) >= 1000:  # Get 1000 working proxies max
-                    break
+        working_proxies = await _test_proxy_connection(available_proxies, MAX_PROXY_ATTEMPTS)
         
         log_info(f"Found {len(working_proxies)} working proxies")
         
