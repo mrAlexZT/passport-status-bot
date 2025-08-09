@@ -105,19 +105,33 @@ async def _get_public_proxies_list() -> list[str]:
     return proxies[:1000]  # Limit to max 1000 proxies
 
 @log_function("test_proxy_connection")
-async def _test_proxy_connection(proxy_url: str) -> bool:
+async def _test_proxy_connection(proxy_url: str, timeout: float = 30000) -> bool:
     # Use playwright to test proxy connection
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            proxy={"server": proxy_url}
-        )
-        page = await browser.new_page()
-        await page.goto("https://httpbin.org/ip")
-        content = await page.content()
-        log_info(f"Proxy {proxy_url} content: {content}") # TODO: remove
-        await browser.close()
-        return True
+
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                proxy={"server": proxy_url},
+                timeout=timeout
+            )
+
+            page = await browser.new_page()
+
+            try:
+                response = await page.goto("https://httpbin.org/ip", timeout=timeout)
+                if not response or not response.ok:
+                    return False
+
+                content = await page.content()
+                log_info(f"Proxy {proxy_url} content: {content}") # TODO: remove
+                return True
+            finally:
+                await browser.close()
+
+    except Exception as e:
+        log_error(f"Proxy {proxy_url} failed: {str(e)}")
+        return False
 
 @log_function("test_proxy_connection")
 async def _test_proxy_connection_OLD(proxy_url: str) -> bool:
