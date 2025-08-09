@@ -15,7 +15,7 @@ from playwright.async_api import async_playwright
 import aiohttp
 
 # Local application imports
-from bot.core.logger import log_error, log_warning, log_function
+from bot.core.logger import log_error, log_warning, log_function, log_info
 
 
 async def _apply_stealth_to_context(context):
@@ -172,6 +172,28 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         error_for_admin = False
         screenshot_bytes = None
         video_path = None
+
+        # Check IP address first to verify proxy is working
+        try:
+            ip_check_resp = await page.goto("https://2ip.ua", wait_until="domcontentloaded", timeout=15000)
+            if ip_check_resp and ip_check_resp.status == 200:
+                try:
+                    # Get the IP from 2ip.ua page
+                    current_ip = await page.evaluate("""
+                        () => {
+                            const ipElement = document.querySelector('.ip') || 
+                                            document.querySelector('[data-ip]') ||
+                                            document.querySelector('#d_clip_button span');
+                            return ipElement ? ipElement.textContent.trim() : 'Unknown';
+                        }
+                    """)
+                    log_info(f"Current IP for session {identifier}: {current_ip}")
+                except Exception as ip_err:
+                    log_warning(f"Failed to extract IP from 2ip.ua: {ip_err}")
+            else:
+                log_warning(f"Failed to load 2ip.ua, status: {getattr(ip_check_resp, 'status', 'unknown')}")
+        except Exception as ip_check_err:
+            log_warning(f"IP check failed: {ip_check_err}")
 
         try:
             resp = await page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
