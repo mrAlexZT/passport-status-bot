@@ -105,59 +105,95 @@ async def _get_public_proxies_list() -> list[str]:
     return proxies[:1000]  # Limit to max 1000 proxies
 
 @log_function("test_proxy_connection")
-async def _test_proxy_connection(proxy_urls: list[str], max_proxies_checked: int = 10, timeout: float = 30000) -> list[str]:
-
+async def _test_proxy_connection(
+    proxy_urls: list[str],
+    max_proxies_checked: int = 10,
+    timeout: float = 30000,
+    concurrency: int = 5
+) -> list[str]:
+    
     log_info(f"Testing {len(proxy_urls)} proxies")
     log_info(f"Max proxies checked: {max_proxies_checked}")
+    log_info(f"Concurrent tests: {concurrency}")
 
     test_url = "https://httpbin.org/ip"
     working_proxies: list[str] = []
     video_tmpdir = tempfile.mkdtemp(prefix="pwvideo_")
+    semaphore = asyncio.Semaphore(concurrency)
+    browser = None
 
     try:
         async with async_playwright() as p:
-            # Launch browser (no video recording here)
-            browser = await p.chromium.launch(headless=True, timeout=timeout)
-            # Create context with proxy AND video recording
-            context = await browser.new_context(
-                record_video_dir=video_tmpdir,
-                record_video_size={"width": 1280, "height": 720}
+            # Launch browser once
+            browser = await p.chromium.launch(
+                headless=True,
+                timeout=timeout
             )
-
-            for proxy_url in proxy_urls[:max_proxies_checked]:
-                log_info(f"Testing proxy {proxy_url}")
-                try:
-                    await context.set_proxy(server=proxy_url)
-                    page = await context.new_page()
-                    
+            
+            async def test_proxy(proxy_url: str) -> str | None:
+                async with semaphore:
+                    context = None
                     try:
-                        response = await page.goto(test_url, timeout=timeout)
-                        if response and response.status == 200:
-                            content = await page.content()
-                            if "origin" in content:  # Basic validation
-                                working_proxies.append(proxy_url)
-                                log_info(f"Proxy {proxy_url} works")
+                        # Create isolated context for each proxy
+                        context = await browser.new_context(
+                            record_video_dir=video_tmpdir,
+                            record_video_size={"width": 1280, "height": 720}
+                        )
+                        await context.set_proxy(server=proxy_url)
+                        page = await context.new_page()
+                        
+                        try:
+                            response = await page.goto(
+                                test_url,
+                                timeout=timeout,
+                                wait_until="domcontentloaded"
+                            )
+                            if response and response.status == 200:
+                                content = await page.content()
+                                if "origin" in content:
+                                    log_info(f"Proxy {proxy_url} works")
+                                    return proxy_url
+                                else:
+                                    log_info(f"Proxy {proxy_url} returned invalid content")
                             else:
-                                log_info(f"Proxy {proxy_url} returned invalid content")
-                        else:
-                            log_info(f"Proxy {proxy_url} failed with status: {response.status if response else 'no response'}")
+                                status = response.status if response else "no response"
+                                log_info(f"Proxy {proxy_url} failed with status: {status}")
+                        except Exception as e:
+                            log_info(f"Proxy {proxy_url} failed with error: {str(e)}")
+                        finally:
+                            await page.close()
                     except Exception as e:
-                        log_info(f"Proxy {proxy_url} failed with error: {str(e)}")
+                        log_info(f"Proxy setup failed for {proxy_url}: {str(e)}")
                     finally:
-                        # Close page
-                        await page.close()
-                except Exception as e:
-                    log_info(f"Failed to test proxy {proxy_url}: {str(e)}")
+                        if context:
+                            await context.close()
+                    return None
+
+            # Run tests concurrently
+            tasks = [
+                test_proxy(proxy_url)
+                for proxy_url in proxy_urls[:max_proxies_checked]
+            ]
+            results = await asyncio.gather(*tasks)
+            working_proxies = [result for result in results if result is not None]
+
+    except Exception as e:
+        log_info(f"Critical testing error: {str(e)}")
+        # Send error video immediately on critical failure
+        await _send_error_to_admin(e, test_url, "test", video_tmpdir)
     finally:
-        # Send video after all tests are done
-        await _send_error_to_admin(None, test_url, "test", video_tmpdir)
-
-        # Remove video directory
+        # Final video handling
+        if working_proxies:
+            # Only send video if failures occurred
+            if len(working_proxies) < min(len(proxy_urls), max_proxies_checked):
+                await _send_error_to_admin(None, test_url, "test", video_tmpdir)
+        else:
+            await _send_error_to_admin(None, test_url, "test", video_tmpdir)
+            
+        # Cleanup resources
         shutil.rmtree(video_tmpdir, ignore_errors=True)
-
-        # Close context and browser
-        await context.close()
-        await browser.close()
+        if browser:
+            await browser.close()
 
     log_info(f"Found {len(working_proxies)} working proxies")
     return working_proxies
