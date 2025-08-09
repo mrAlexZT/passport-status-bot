@@ -111,7 +111,7 @@ async def _test_proxy_connection(proxy_url: str) -> bool:
     Returns True if connection is successful, False otherwise.
     """
     try:
-        timeout = aiohttp.ClientTimeout(total=8)  # Quick test
+        timeout = aiohttp.ClientTimeout(total=30)  # Quick test
         proxy_connector = aiohttp.TCPConnector()
         
         async with aiohttp.ClientSession(
