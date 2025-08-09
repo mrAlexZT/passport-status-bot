@@ -105,7 +105,11 @@ async def _get_public_proxies_list() -> list[str]:
     return proxies[:1000]  # Limit to max 1000 proxies
 
 @log_function("test_proxy_connection")
-async def _test_proxy_connection(proxy_urls: list[str], timeout: float = 30000) -> list[str]:
+async def _test_proxy_connection(proxy_urls: list[str], max_proxies_checked: int = 10, timeout: float = 30000) -> list[str]:
+
+    log_info(f"Testing {len(proxy_urls)} proxies")
+    log_info(f"Proxies: {proxy_urls}")
+
     test_url = "https://httpbin.org/ip"
     working_proxies = []
     video_tmpdir = tempfile.mkdtemp(prefix="pwvideo_")
@@ -115,7 +119,7 @@ async def _test_proxy_connection(proxy_urls: list[str], timeout: float = 30000) 
             # Launch browser (no video recording here)
             browser = await p.chromium.launch(headless=True, timeout=timeout)
 
-            for proxy_url in proxy_urls:
+            for proxy_url in proxy_urls[:max_proxies_checked]:
                 log_info(f"Testing proxy {proxy_url}")
                 try:
                     # Create context with proxy AND video recording
