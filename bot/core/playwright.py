@@ -66,9 +66,10 @@ async def _get_public_proxies_list() -> list[str]:
     Returns list of proxy URLs.
     """
     sources = [
-        "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=3000&country=all&ssl=all&anonymity=all",
-        "https://www.proxy-list.download/api/v1/get?type=http",
-        "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+        "https://api.proxyscrape.com/v4/free-proxy-list/get?request=get_proxies&country=ua&protocol=http&skip=0&proxy_format=ipport&format=text&anonymity=Elite&timeout=20000",
+        #"https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=3000&country=all&ssl=all&anonymity=all",
+        #"https://www.proxy-list.download/api/v1/get?type=http",
+        #"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
     ]
 
     proxies: list[str] = []
