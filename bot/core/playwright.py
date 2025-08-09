@@ -111,24 +111,23 @@ async def _test_proxy_connection(proxy_urls: list[str], max_proxies_checked: int
     log_info(f"Max proxies checked: {max_proxies_checked}")
 
     test_url = "https://httpbin.org/ip"
-    working_proxies = []
+    working_proxies: list[str] = []
     video_tmpdir = tempfile.mkdtemp(prefix="pwvideo_")
 
     try:
         async with async_playwright() as p:
             # Launch browser (no video recording here)
             browser = await p.chromium.launch(headless=True, timeout=timeout)
+            # Create context with proxy AND video recording
+            context = await browser.new_context(
+                record_video_dir=video_tmpdir,
+                record_video_size={"width": 1280, "height": 720}
+            )
 
             for proxy_url in proxy_urls[:max_proxies_checked]:
                 log_info(f"Testing proxy {proxy_url}")
                 try:
-                    # Create context with proxy AND video recording
-                    context = await browser.new_context(
-                        proxy={"server": proxy_url},
-                        record_video_dir=video_tmpdir,
-                        record_video_size={"width": 1280, "height": 720}
-                    )
-
+                    await context.set_proxy(server=proxy_url)
                     page = await context.new_page()
                     
                     try:
@@ -145,18 +144,20 @@ async def _test_proxy_connection(proxy_urls: list[str], max_proxies_checked: int
                     except Exception as e:
                         log_info(f"Proxy {proxy_url} failed with error: {str(e)}")
                     finally:
-                        # Close page and context to finalize video
+                        # Close page
                         await page.close()
-                        await context.close()
                 except Exception as e:
                     log_info(f"Failed to test proxy {proxy_url}: {str(e)}")
-
-            # Send video after all tests are done
-            await _send_error_to_admin(None, test_url, "test", video_tmpdir)
-            
-            await browser.close()
     finally:
+        # Send video after all tests are done
+        await _send_error_to_admin(None, test_url, "test", video_tmpdir)
+
+        # Remove video directory
         shutil.rmtree(video_tmpdir, ignore_errors=True)
+
+        # Close context and browser
+        await context.close()
+        await browser.close()
 
     log_info(f"Found {len(working_proxies)} working proxies")
     return working_proxies
