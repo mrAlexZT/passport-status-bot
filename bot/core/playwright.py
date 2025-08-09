@@ -106,6 +106,21 @@ async def _get_public_proxies_list() -> list[str]:
 
 @log_function("test_proxy_connection")
 async def _test_proxy_connection(proxy_url: str) -> bool:
+    # Use playwright to test proxy connection
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            proxy={"server": proxy_url}
+        )
+        page = await browser.new_page()
+        await page.goto("https://httpbin.org/ip")
+        content = await page.content()
+        log_info(f"Proxy {proxy_url} content: {content}") # TODO: remove
+        await browser.close()
+        return True
+
+@log_function("test_proxy_connection")
+async def _test_proxy_connection_OLD(proxy_url: str) -> bool:
     """
     Tests proxy connection using aiohttp.
     Returns True if proxy responds with valid IP, False otherwise.
