@@ -12,6 +12,7 @@ import tempfile
 
 # Third party imports
 from playwright.async_api import async_playwright
+import aiohttp
 
 # Local application imports
 from bot.core.logger import log_error, log_warning, log_function
@@ -59,6 +60,54 @@ async def _apply_stealth_to_context(context):
     )
 
 
+async def _get_random_public_proxy_option() -> dict:
+    """
+    Fetch a random public HTTP proxy from multiple sources. Returns Playwright
+    proxy options dict: {"server": "http://host:port"} or None if unavailable.
+    """
+    sources = [
+        "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=3000&country=all&ssl=all&anonymity=all",
+        "https://www.proxy-list.download/api/v1/get?type=http",
+        "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+    ]
+
+    proxies: list[str] = []
+
+    async def fetch_text(url: str) -> str:
+        try:
+            timeout = aiohttp.ClientTimeout(total=8)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(url, headers={"Accept": "text/plain"}) as resp:
+                    if resp.status == 200:
+                        return await resp.text()
+        except Exception:
+            return ""
+        return ""
+
+    for url in sources:
+        text = await fetch_text(url)
+        if not text:
+            continue
+        for line in text.splitlines():
+            candidate = line.strip()
+            if not candidate:
+                continue
+            # Expect host:port or protocol://host:port
+            if ":" not in candidate:
+                continue
+            if candidate.startswith("http://") or candidate.startswith("https://"):
+                proxies.append(candidate)
+            else:
+                proxies.append(f"http://{candidate}")
+
+    if not proxies:
+        return None
+
+    import random as _rnd
+    proxy_url = _rnd.choice(proxies)
+    return {"server": proxy_url}
+
+
 async def _playwright_check_async(identifier: str, retrive_all: bool = False):
     target_url = (
         f"http://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&_={random.randint(1000000000000, 1999999999999)}"
@@ -68,14 +117,28 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         raw_json = None
 
         # Always use a real browser context to better handle Cloudflare
-        browser = await p.chromium.launch(
-            headless=True,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-            ],
-        )
+        # Try with a random public proxy first; fall back to direct if launch fails
+        proxy_options = await _get_random_public_proxy_option()
+        browser = None
+        last_error = None
+        for attempt in range(2):
+            try:
+                browser = await p.chromium.launch(
+                    headless=True,
+                    proxy=proxy_options if attempt == 0 else None,
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                    ],
+                )
+                break
+            except Exception as e:
+                last_error = e
+                if attempt == 0:
+                    log_warning(f"Chromium launch failed with proxy, retrying without proxy: {e}")
+        if browser is None:
+            raise last_error or RuntimeError("Failed to launch Chromium")
 
         video_tmpdir = tempfile.mkdtemp(prefix="pwvideo_")
         context = await browser.new_context(
