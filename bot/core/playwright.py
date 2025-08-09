@@ -123,6 +123,7 @@ async def _test_proxy_connection(proxy_url: str) -> bool:
                 proxy=proxy_url,
                 headers={"User-Agent": "Mozilla/5.0 (compatible; Test/1.0)"}
             ) as resp:
+                log_info(f"Proxy {proxy_url} status: {resp.status}") # TODO: remove
                 if resp.status == 200:
                     data = await resp.json()
                     if "origin" in data:
