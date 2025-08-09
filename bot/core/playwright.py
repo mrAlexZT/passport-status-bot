@@ -144,7 +144,7 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
     )
     
     # Configuration
-    MAX_PROXY_ATTEMPTS = int(os.getenv("PLAYWRIGHT_MAX_PROXY_RETRIES", "3"))
+    MAX_PROXY_ATTEMPTS = int(os.getenv("PLAYWRIGHT_MAX_PROXY_RETRIES", "1000"))
     TARGET_TIMEOUT = int(os.getenv("PLAYWRIGHT_TARGET_TIMEOUT", "15")) * 1000  # Convert to ms
     
     async with async_playwright() as p:
@@ -164,7 +164,7 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         for proxy_url in available_proxies[:MAX_PROXY_ATTEMPTS]:
             if await _test_proxy_connection(proxy_url):
                 working_proxies.append(proxy_url)
-                if len(working_proxies) >= 2:  # Get 2 working proxies max
+                if len(working_proxies) >= 1000:  # Get 1000 working proxies max
                     break
         
         log_info(f"Found {len(working_proxies)} working proxies")
