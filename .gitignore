@@ -132,3 +132,4 @@ dmypy.json
 
 out.txt
 logs/
+.DS_Store
