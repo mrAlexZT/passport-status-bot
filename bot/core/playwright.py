@@ -18,6 +18,7 @@ import aiohttp
 from bot.core.logger import log_error, log_warning, log_function, log_info
 
 
+@log_function("apply_stealth_to_context")
 async def _apply_stealth_to_context(context):
     """
     Apply basic stealth measures to defeat simple bot detection:
@@ -59,7 +60,7 @@ async def _apply_stealth_to_context(context):
         """
     )
 
-
+@log_function("get_public_proxies_list")
 async def _get_public_proxies_list() -> list[str]:
     """
     Fetch limited number of public HTTP proxies from multiple sources.
@@ -103,7 +104,7 @@ async def _get_public_proxies_list() -> list[str]:
     _rnd.shuffle(proxies)
     return proxies[:1000]  # Limit to max 1000 proxies
 
-
+@log_function("test_proxy_connection")
 async def _test_proxy_connection(proxy_url: str) -> bool:
     """
     Quick test if proxy is responsive using aiohttp (faster than Playwright).
@@ -131,7 +132,7 @@ async def _test_proxy_connection(proxy_url: str) -> bool:
     except Exception:
         return False
 
-
+@log_function("playwright_check_async")
 async def _playwright_check_async(identifier: str, retrive_all: bool = False):
     """
     Enhanced Playwright check with better Cloudflare handling and timeout management.
@@ -362,7 +363,7 @@ async def _playwright_check_async(identifier: str, retrive_all: bool = False):
         return status_list
     return [status_list[-1]] if status_list else None
 
-
+@log_function("send_error_to_admin")
 async def _send_error_to_admin(page, target_url: str, identifier: str, video_tmpdir: str):
     """Send error screenshot and video to admin for debugging."""
     try:
