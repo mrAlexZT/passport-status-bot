@@ -107,31 +107,56 @@ async def _get_public_proxies_list() -> list[str]:
 @log_function("test_proxy_connection")
 async def _test_proxy_connection(proxy_url: str) -> bool:
     """
-    Quick test if proxy is responsive using aiohttp (faster than Playwright).
-    Returns True if connection is successful, False otherwise.
+    Tests proxy connection using aiohttp.
+    Returns True if proxy responds with valid IP, False otherwise.
+    
+    Args:
+        proxy_url: Full proxy URL (e.g., http://user:pass@host:port)
+        
+    Returns:
+        bool: True if proxy is working, False otherwise
     """
+    TEST_URL = "https://httpbin.org/ip"
+    TEST_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Test/1.0)"}
+    TIMEOUT = 30
+    
+    proxy_connector = aiohttp.TCPConnector(force_close=True, limit=1)
+    
     try:
-        timeout = aiohttp.ClientTimeout(total=30)  # Quick test
-        proxy_connector = aiohttp.TCPConnector()
+        timeout = aiohttp.ClientTimeout(total=TIMEOUT)
         
         async with aiohttp.ClientSession(
             timeout=timeout,
             connector=proxy_connector
         ) as session:
             async with session.get(
-                "https://httpbin.org/ip",
+                TEST_URL,
                 proxy=proxy_url,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; Test/1.0)"}
+                headers=TEST_HEADERS
             ) as resp:
-                log_info(f"Proxy {proxy_url} status: {resp.status}") # TODO: remove
-                if resp.status == 200:
-                    data = await resp.json()
-                    if "origin" in data:
-                        log_info(f"Proxy {proxy_url} working, IP: {data['origin']}")
-                        return True
+                if resp.status != 200:
+                    log_warning(f"Proxy {proxy_url} returned status {resp.status}")
+                    return False
+                    
+                data = await resp.json()
+                if "origin" not in data:
+                    log_warning(f"Proxy {proxy_url} returned invalid response")
+                    return False
+                    
+                log_info(f"Proxy {proxy_url} working, IP: {data['origin']}")
+                return True
+                
+    except asyncio.TimeoutError:
+        log_warning(f"Proxy {proxy_url} timeout")
         return False
-    except Exception:
+    except aiohttp.ClientError as e:
+        log_warning(f"Proxy {proxy_url} connection error: {str(e)}")
         return False
+    except Exception as e:
+        log_error(f"Unexpected error testing proxy {proxy_url}: {str(e)}")
+        return False
+    finally:
+        await proxy_connector.close()
 
 @log_function("playwright_check_async")
 async def _playwright_check_async(identifier: str, retrive_all: bool = False):
