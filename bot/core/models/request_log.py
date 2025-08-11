@@ -1,5 +1,7 @@
-from beanie import Document
 from datetime import datetime
+
+from beanie import Document
+
 
 class RequestLog(Document):
     telegram_id: str
@@ -7,4 +9,3 @@ class RequestLog(Document):
 
     class Settings:
         name = "request_logs"
-

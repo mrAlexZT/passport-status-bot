@@ -1,4 +1,4 @@
-FROM python:3.13 AS python-base
+FROM python:3.12 AS python-base
 
 ENV POETRY_VERSION=2.1.0
 ENV POETRY_HOME=/opt/poetry
@@ -17,16 +17,17 @@ FROM python-base
 
 # Install system deps
 RUN apt-get update && apt-get install -y \
-    build-essential libzbar-dev ffmpeg libsm6 libxext6 libgl1 && \
+    build-essential libzbar-dev ffmpeg libsm6 libxext6 libgl1 fonts-unifont && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy poetry venv from poetry-base
 COPY --from=poetry-base ${POETRY_VENV} ${POETRY_VENV}
 
+# Set the working directory inside the container
 WORKDIR /app
 
 # Copy dependency files first to cache dependencies
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 
 # Lock dependencies
 RUN poetry lock
@@ -39,7 +40,7 @@ RUN poetry install --no-interaction --no-ansi --no-root --without dev
 
 # Install Playwright and browsers
 RUN poetry run pip install --no-cache-dir playwright \
-    && poetry run playwright install --with-deps chromium
+    && poetry run playwright install chromium
 
 # Install new version of cloudscraper from GitHub because it's not in the PyPI
 RUN poetry run pip install git+https://github.com/VeNoMouS/cloudscraper.git@3.0.0

@@ -1,4 +1,4 @@
-from beanie import Document, Indexed
+from beanie import Document
 
 
 class PushModel(Document):
