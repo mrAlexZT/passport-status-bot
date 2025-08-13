@@ -83,7 +83,7 @@ class TestUserManager(AsyncTestCase):
     """Test user management business logic."""
 
     @pytest.mark.asyncio
-    @patch("bot.services.user_service.Scraper")
+    @patch("bot.services.user_service.AsyncCloudScraper")
     async def test_link_user_to_session_success(self, mock_scraper_class: Any) -> None:
         """Test successful user linking."""
         mock_scraper = mock_scraper_class.return_value

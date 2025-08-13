@@ -42,7 +42,9 @@ async def notify_subscribers(
         return
 
     # Use centralized status message formatting
-    _msg_text = format_new_status_message(target_application.session_id, new_statuses)
+    _msg_text = await format_new_status_message(
+        target_application.session_id, new_statuses
+    )
 
     for _subscription in _subscriptions:
         _push_subscription = await PushModel.find_one(

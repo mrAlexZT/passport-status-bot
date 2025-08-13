@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
 
+import psutil
+
 from bot.core.logger import log_error, log_info, log_warning
 from bot.core.models.request_log import RequestLog
 from bot.core.models.user import SubscriptionModel, UserModel
@@ -88,8 +90,6 @@ class HealthChecker:
 
             # Memory usage
             try:
-                import psutil
-
                 metrics.memory_usage_mb = (
                     psutil.Process().memory_info().rss / 1024 / 1024
                 )
@@ -194,9 +194,9 @@ class PerformanceMonitor:
             "request_count": count,
             "avg_response_time": sum(sorted_times) / count,
             "median_response_time": sorted_times[count // 2],
-            "p95_response_time": sorted_times[int(count * 0.95)]
-            if count > 20
-            else sorted_times[-1],
+            "p95_response_time": (
+                sorted_times[int(count * 0.95)] if count > 20 else sorted_times[-1]
+            ),
             "max_response_time": max(sorted_times),
             "error_counts": dict(self._error_counts),
             "uptime_seconds": time.time() - self._start_time,

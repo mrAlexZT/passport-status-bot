@@ -1,4 +1,3 @@
-version: '3'
 services:
   mfa_passport_bot:
     depends_on:

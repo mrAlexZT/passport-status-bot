@@ -63,7 +63,7 @@ async def _apply_stealth_to_context(context: Any) -> None:
 
 @log_function("playwright_check_async")
 async def _playwright_check_async(
-    identifier: str, retrive_all: bool = False
+    identifier: str, retrieve_all: bool = False
 ) -> list | None:
     """
     Enhanced Playwright check with better Cloudflare handling and timeout management.
@@ -355,7 +355,7 @@ async def _playwright_check_async(
         for status in parsed_json
     ]
 
-    if retrive_all:
+    if retrieve_all:
         return status_list
     return [status_list[-1]] if status_list else None
 
@@ -454,7 +454,9 @@ async def _send_error_to_admin(
 
 
 @log_function("playwright_check")
-def playwright_check(identifier: str, retrive_all: bool = False) -> list | None:
+async def playwright_check(
+    identifier: str, retrieve_all: bool = False
+) -> list[dict[str, str]] | None:
     """
     Run the async Playwright flow in a background thread to avoid the
     "Sync API inside asyncio loop" issue and keep a sync interface.
@@ -462,7 +464,7 @@ def playwright_check(identifier: str, retrive_all: bool = False) -> list | None:
     try:
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(
-                lambda: asyncio.run(_playwright_check_async(identifier, retrive_all))
+                lambda: asyncio.run(_playwright_check_async(identifier, retrieve_all))
             )
             return future.result()  # type: ignore[no-any-return]
     except Exception as e:

@@ -124,7 +124,9 @@ ADMIN_INVALID_DATA_WARNING = "\n⚠️ *Увага:* Знайдено {invalid_u
 # === SCHEDULER MESSAGES ===
 ADMIN_SCHEDULER_INTERVAL_UPDATED = "✅ Інтервал оновлено до {minutes} хв."
 ADMIN_SCHEDULER_INTERVAL_TOO_LOW = "❌ Мінімальний інтервал — 60 хв."
-ADMIN_SCHEDULER_INTERVAL_INVALID = "❌ Невірний формат. Використання: /set_interval <хвилини>"
+ADMIN_SCHEDULER_INTERVAL_INVALID = (
+    "❌ Невірний формат. Використання: /set_interval <хвилини>"
+)
 ADMIN_SCHEDULER_INTERVAL_CURRENT = "⏱ Поточний інтервал: {minutes} хв."
 
 # === VERSION MESSAGES ===
@@ -205,7 +207,7 @@ COMMAND_DUPLICATE_LINK = (
 )
 
 # === BOT STATUS MESSAGES ===
-BOT_STARTED_MESSAGE = "🚀 Bot started at {timestamp}"
+BOT_STARTED_MESSAGE = "🚀 Bot started with {update_period} at {timestamp}"
 BOT_STOPPED_MESSAGE = "🛑 Bot stopped at {timestamp}"
 BOT_STARTUP_FAILED = "❌ Bot startup failed: {error}"
 BOT_PING_RESPONSE = "Pong!"

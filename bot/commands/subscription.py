@@ -149,7 +149,7 @@ class SubscriptionCommands:
             if success and application:
                 from bot.core.utils import format_application_statuses_section
 
-                status_section = format_application_statuses_section(
+                status_section = await format_application_statuses_section(
                     application.statuses
                 )
                 await safe_edit_message(_message, status_section, parse_mode="Markdown")
@@ -243,7 +243,7 @@ class SubscriptionCommands:
                     if latest_status:
                         from bot.core.utils import _get_formatted_date
 
-                        date = _get_formatted_date(latest_status)
+                        date = await _get_formatted_date(latest_status)
                         dump_lines.append(f"   Статус: {latest_status.status}")
                         dump_lines.append(f"   Дата: {date}")
 
