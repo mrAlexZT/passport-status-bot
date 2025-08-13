@@ -13,14 +13,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from bot.bot_instance import bot
 from bot.commands.admin import AdminCommands
 from bot.commands.subscription import SubscriptionCommands
-
-# Import all command handlers
 from bot.commands.system import SystemCommands
 from bot.commands.user import UserCommands
+from bot.core.config import settings
 from bot.core.constants import BOT_STOPPED_MANUALLY
 from bot.core.logger import log_error, log_info
-from bot.core.scheduler import scheduler_job, set_scheduler, JOB_ID
-from bot.core.config import settings
+from bot.core.scheduler import JOB_ID, scheduler_job, set_scheduler
 from bot.middlewares.antiflood import ThrottlingMiddleware
 from bot.middlewares.debug import LoggerMiddleware
 from bot.services import StartupService

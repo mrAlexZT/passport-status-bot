@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     # Performance
     MAX_CONCURRENT_REQUESTS: int = Field(default=100, ge=1, le=1000)
     REQUEST_TIMEOUT: int = Field(default=30, ge=5, le=300)  # seconds
-    
+
     # Scheduler
     SCHEDULER_INTERVAL_MINUTES: int = Field(
         default=720, ge=60, description="Interval in minutes for status checks"

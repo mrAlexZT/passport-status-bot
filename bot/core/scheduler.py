@@ -1,5 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from bot.core.api import Scraper
+
+from bot.core.api import AsyncCloudScraper
 from bot.core.logger import log_function
 from bot.core.models.application import ApplicationModel
 from bot.core.notificator import notify_subscribers
@@ -42,7 +43,7 @@ def get_scheduler_interval_minutes() -> int | None:
 @log_function("scheduler_job")
 async def scheduler_job() -> None:
     applications = await ApplicationModel.find({}).to_list()
-    scraper = Scraper()
+    scraper = AsyncCloudScraper()
 
     for application in applications:
         try:

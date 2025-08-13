@@ -65,13 +65,17 @@ async def process_status_update(
     """Process status updates for an application and notify subscribers if there are new statuses."""
     try:
         # Fetch current statuses from the API using the correct method name
-        current_statuses_data = scraper.check(application.session_id, retrive_all=True)
+        current_statuses_data = await scraper.check(
+            application.session_id, retrieve_all=True
+        )
 
         if not current_statuses_data:
             return
 
         # Convert API response to StatusModel objects
-        current_statuses = create_status_models_from_api_response(current_statuses_data)
+        current_statuses = await create_status_models_from_api_response(
+            current_statuses_data
+        )
 
         # Get existing statuses from the application
         existing_statuses = application.statuses or []
@@ -199,18 +203,20 @@ async def show_typing_and_wait_message(
 # === STATUS FORMATTING UTILITIES ===
 
 
-def _get_formatted_date(status: StatusModel) -> str:
+async def _get_formatted_date(status: StatusModel) -> str:
     """Extract formatted date from status."""
     return datetime.fromtimestamp(int(status.date) / 1000).strftime("%Y-%m-%d %H:%M")
 
 
-def _format_single_status(status: StatusModel, index: int) -> str:
+async def _format_single_status(status: StatusModel, index: int) -> str:
     """Format a single status entry."""
-    date = _get_formatted_date(status)
+    date = await _get_formatted_date(status)
     return f"{index}. *{status.status}* _{date}_\n\n"
 
 
-def format_new_status_message(session_id: str, new_statuses: list[StatusModel]) -> str:
+async def format_new_status_message(
+    session_id: str, new_statuses: list[StatusModel]
+) -> str:
     """Format new status updates for notifications."""
     if not new_statuses:
         return "Немає нових статусів."
@@ -219,13 +225,13 @@ def format_new_status_message(session_id: str, new_statuses: list[StatusModel]) 
     msg_text = header
 
     for status in new_statuses:
-        date = _get_formatted_date(status)
+        date = await _get_formatted_date(status)
         msg_text += f"📋 *{status.status}*\n⏰ _{date}_\n\n"
 
     return msg_text
 
 
-def format_status_list(
+async def format_status_list(
     statuses: list[StatusModel], session_id: str | None = None
 ) -> str:
     """Format a list of statuses into readable text."""
@@ -240,24 +246,24 @@ def format_status_list(
     msg_text = header
 
     for i, status in enumerate(statuses, start=1):
-        msg_text += _format_single_status(status, i)
+        msg_text += await _format_single_status(status, i)
 
     return msg_text
 
 
-def format_application_statuses_section(statuses: list[StatusModel]) -> str:
+async def format_application_statuses_section(statuses: list[StatusModel]) -> str:
     """Format application statuses section for cabinet display."""
     if not statuses:
         return ""
 
     msg_text = HEADER_APPLICATION_STATUSES
     for i, status in enumerate(statuses, start=1):
-        msg_text += _format_single_status(status, i)
+        msg_text += await _format_single_status(status, i)
 
     return msg_text
 
 
-def create_status_models_from_api_response(
+async def create_status_models_from_api_response(
     status_data: list[dict],
 ) -> list[StatusModel]:
     """Convert API response status data to StatusModel objects."""
@@ -293,7 +299,7 @@ async def handle_generic_error(message: types.Message, operation: str) -> None:
     await safe_edit_message(message, ERROR_GENERIC_DETAILED.format(operation=operation))
 
 
-def log_handler_error(
+async def log_handler_error(
     handler_name: str, message: types.Message, exception: Exception
 ) -> None:
     """Log handler error with consistent pattern."""

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-"""
-Makefile equivalent for common development tasks.
-Run with: ./scripts/run.sh <command>
-"""
+
+# Makefile equivalent for common development tasks.
+# Run with: ./scripts/run.sh <command>
 
 set -e
 
@@ -77,10 +76,16 @@ clean() {
 
 docker() {
     echo "🐳 Building and running with Docker..."
-    docker-compose down
-    docker-compose build
+    echo "🔧 Stopping Docker containers..."
+    docker-compose down --rmi all
+    echo "✅ Docker containers stopped!"
+    echo "🔧 Building Docker image..."
+    docker-compose build --no-cache
+    echo "✅ Docker image built!"
+    echo "🚀 Starting Docker containers..."
     docker-compose up -d
     echo "✅ Docker containers started!"
+    echo "🎉 Docker setup completed!"
 }
 
 # Main command dispatcher

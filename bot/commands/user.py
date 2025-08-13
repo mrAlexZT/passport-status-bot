@@ -8,7 +8,7 @@ from aiogram import types
 from PIL import Image
 from qreader import QReader
 
-from bot.core.api import Scraper
+from bot.core.api import AsyncCloudScraper
 from bot.core.constants import (
     COMMAND_DUPLICATE_LINK,
     ERROR_CHECKING,
@@ -73,7 +73,7 @@ class UserCommands:
             await safe_edit_message(_message, initial_message, parse_mode="Markdown")
 
             if application:
-                status_section = format_application_statuses_section(
+                status_section = await format_application_statuses_section(
                     application.statuses
                 )
                 last_update = LAST_UPDATE_FORMAT.format(
@@ -163,19 +163,19 @@ class UserCommands:
 
         await show_typing_action(message)
         try:
-            scraper = Scraper()
+            scraper = AsyncCloudScraper()
             session_id = message.text or ""
-            status_data = scraper.check(session_id, retrive_all=True)
+            status_data = await scraper.check(session_id, retrieve_all=True)
             if not status_data:
                 await safe_edit_message(_message, ERROR_CHECKING)
                 return
 
-            statuses = create_status_models_from_api_response(status_data)
-            formatted_text = format_status_list(statuses, session_id=session_id)
+            statuses = await create_status_models_from_api_response(status_data)
+            formatted_text = await format_status_list(statuses, session_id=session_id)
 
             await safe_edit_message(_message, formatted_text, parse_mode="Markdown")
         except Exception as e:
-            log_handler_error("custom_check", message, e)
+            await log_handler_error("custom_check", message, e)
             await safe_edit_message(
                 _message, ERROR_GENERIC_DETAILED.format(operation="перевірці")
             )
@@ -239,5 +239,5 @@ class UserCommands:
                 await safe_edit_message(_message, QR_NOT_RECOGNIZED)
 
         except Exception as e:
-            log_handler_error("image_qr_recognition", message, e)
+            await log_handler_error("image_qr_recognition", message, e)
             await safe_edit_message(_message, ERROR_QR_RECOGNITION)

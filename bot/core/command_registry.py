@@ -55,8 +55,12 @@ class CommandRegistry:
         types.BotCommand(command="/logs", description="Переглянути логи"),
         types.BotCommand(command="/users", description="Список користувачів"),
         types.BotCommand(command="/cleanup", description="Очистити базу даних"),
-        types.BotCommand(command="/set_interval", description="Змінити інтервал перевірки (адмін)"),
-        types.BotCommand(command="/get_interval", description="Поточний інтервал перевірки (адмін)"),
+        types.BotCommand(
+            command="/set_interval", description="Змінити інтервал перевірки (адмін)"
+        ),
+        types.BotCommand(
+            command="/get_interval", description="Поточний інтервал перевірки (адмін)"
+        ),
     ]
 
     # Admin-only commands

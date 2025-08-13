@@ -20,6 +20,10 @@ from bot.core.constants import (
     ADMIN_CLEANUP_RESULT,
     ADMIN_CLEANUP_START,
     ADMIN_INVALID_DATA_WARNING,
+    ADMIN_SCHEDULER_INTERVAL_CURRENT,
+    ADMIN_SCHEDULER_INTERVAL_INVALID,
+    ADMIN_SCHEDULER_INTERVAL_TOO_LOW,
+    ADMIN_SCHEDULER_INTERVAL_UPDATED,
     ADMIN_TOTAL_STATS,
     ADMIN_USER_ENTRY,
     ADMIN_USER_NO_SUBSCRIPTIONS,
@@ -45,10 +49,6 @@ from bot.core.constants import (
     STATS_GRAPH_NO_DATA,
     STATS_GRAPH_PROGRESS,
     STATS_MESSAGE,
-    ADMIN_SCHEDULER_INTERVAL_UPDATED,
-    ADMIN_SCHEDULER_INTERVAL_TOO_LOW,
-    ADMIN_SCHEDULER_INTERVAL_INVALID,
-    ADMIN_SCHEDULER_INTERVAL_CURRENT,
 )
 from bot.core.logger import global_logger, log_error, log_function, log_info
 from bot.core.models.user import SubscriptionModel, UserModel
@@ -99,6 +99,7 @@ class AdminCommands:
                 await message.answer(ADMIN_SCHEDULER_INTERVAL_TOO_LOW)
                 return
             from bot.core.scheduler import update_scheduler_interval
+
             ok = update_scheduler_interval(minutes)
             if ok:
                 await message.answer(
@@ -121,13 +122,12 @@ class AdminCommands:
             return
         try:
             from bot.core.scheduler import get_scheduler_interval_minutes
+
             mins = get_scheduler_interval_minutes()
             if mins is None:
                 await message.answer(ERROR_GENERIC)
                 return
-            await message.answer(
-                ADMIN_SCHEDULER_INTERVAL_CURRENT.format(minutes=mins)
-            )
+            await message.answer(ADMIN_SCHEDULER_INTERVAL_CURRENT.format(minutes=mins))
         except Exception as e:
             user_id = message.from_user.id if message.from_user else None
             log_error("get_interval failed", user_id, e)

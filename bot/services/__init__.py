@@ -77,7 +77,8 @@ class StartupService:
             # Notify admin
             await notify_admin(
                 BOT_STARTED_MESSAGE.format(
-                    timestamp=datetime.datetime.now().isoformat()
+                    update_period=settings.SCHEDULER_INTERVAL_MINUTES,
+                    timestamp=datetime.datetime.now().isoformat(),
                 )
             )
             log_info("Bot startup completed successfully")

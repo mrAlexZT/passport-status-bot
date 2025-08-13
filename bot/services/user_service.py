@@ -7,7 +7,7 @@ from datetime import datetime
 
 from aiogram import types
 
-from bot.core.api import Scraper
+from bot.core.api import AsyncCloudScraper
 from bot.core.constants import (
     HEADER_YOUR_SUBSCRIPTIONS,
     NOT_SUBSCRIBED,
@@ -38,8 +38,8 @@ class UserManager:
                 return False  # Already linked
 
             # Validate session ID with scraper
-            scraper = Scraper()
-            status_data = scraper.check(session_id, retrive_all=True)
+            scraper = AsyncCloudScraper()
+            status_data = await scraper.check(session_id, retrieve_all=True)
             if not status_data:
                 return False  # Invalid session
 
@@ -116,8 +116,8 @@ class SubscriptionManager:
             # Ensure application exists
             application = await get_application_by_session_id(session_id)
             if not application:
-                scraper = Scraper()
-                status_data = scraper.check(session_id, retrive_all=True)
+                scraper = AsyncCloudScraper()
+                status_data = await scraper.check(session_id, retrieve_all=True)
                 if not status_data:
                     return False
 
@@ -200,8 +200,8 @@ class ApplicationStatusManager:
     ) -> tuple[bool, ApplicationModel | None]:
         """Update application status from external source."""
         try:
-            scraper = Scraper()
-            status_data = scraper.check(session_id, retrive_all=True)
+            scraper = AsyncCloudScraper()
+            status_data = await scraper.check(session_id, retrieve_all=True)
 
             if not status_data:
                 return False, None
@@ -215,7 +215,7 @@ class ApplicationStatusManager:
                 )
                 await application.insert()
             else:
-                application.statuses = create_status_models_from_api_response(
+                application.statuses = await create_status_models_from_api_response(
                     status_data
                 )
                 application.last_update = datetime.now()

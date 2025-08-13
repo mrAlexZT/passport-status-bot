@@ -1,109 +1,106 @@
-# Standard library imports
-import os
+import asyncio
+import functools
+import json
 import secrets
 
-# Third party imports
 import cloudscraper
-from fake_headers import Headers
+import requests
 
-# Local application imports
 from bot.core.logger import log_error, log_function, log_info, log_warning
 from bot.core.playwright import playwright_check
 
 
-class Scraper:
+class AsyncCloudScraper:
+    """
+    An asynchronous client for making web requests that can bypass Cloudflare.
+    Uses asyncio.run_in_executor to offload blocking cloudscraper calls.
+    """
+
     def __init__(self) -> None:
         self.scraper = cloudscraper.create_scraper()
+        log_info("Cloudscraper instance created.")
+
+    @log_function("fetch_sync")
+    def _fetch_sync(self, url: str) -> requests.Response:
+        """
+        Synchronous method to perform the blocking cloudscraper request.
+        This method will be run in a separate thread.
+        """
+        log_info(f"Starting synchronous request for {url} on a background thread.")
+        response: requests.Response = self.scraper.get(url)
+        log_info(
+            f"Synchronous request for {url} completed with status code {response.status_code}."
+        )
+        return response
 
     @log_function("check")
-    def check(
+    async def check(
         self,
         identifier: str,
-        retrive_all: bool = False,
+        retrieve_all: bool = False,
         fallback_to_playwright: bool = True,
     ) -> list[dict[str, str]] | None:
-        log_info(
-            f"Checking status for {identifier} with retrive_all={retrive_all} and fallback_to_playwright={fallback_to_playwright}"
-        )
+        """
+        Asynchronous method to schedule the blocking request and await its result.
+        """
+        test_url = f"https://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&_={secrets.randbelow(10**13) + 10**12}"
+        log_info(f"Target URL: {test_url}")
 
         try:
-            target_url = f"https://passport.mfa.gov.ua/Home/CurrentSessionStatus?sessionId={identifier}&_={secrets.randbelow(10**13) + 10**12}"
-            log_info(f"Target URL: {target_url}")
+            loop = asyncio.get_running_loop()
+            log_info(f"Current event loop: {loop}")
 
-            headers = Headers().generate()
-            log_info(f"Headers: {headers}")
+            blocking_func = functools.partial(self._fetch_sync, test_url)
 
-            # Enforce timeouts to avoid indefinite hanging
-            connect_timeout = int(os.getenv("HTTP_CONNECT_TIMEOUT", "10"))
-            read_timeout = int(os.getenv("HTTP_READ_TIMEOUT", "20"))
-            log_info(
-                f"HTTP timeouts -> connect: {connect_timeout}s, read: {read_timeout}s"
-            )
+            log_info("Scheduling synchronous request to run in an executor.")
+            response = await loop.run_in_executor(None, blocking_func)
 
-            r = self.scraper.get(
-                target_url,
-                headers=headers,
-                timeout=(connect_timeout, read_timeout),
-                allow_redirects=True,
-            )
+            if not response:
+                raise ValueError("Empty response from Cloudscraper.")
 
-            # If the request is not successful, log the warning and return None
-            r_status_code = r.status_code
-            log_info(f"Response status code: {r_status_code}")
-            if r_status_code != 200:
-                log_warning(
-                    f"Request to {target_url} with headers {headers} returned status code {r_status_code}"
-                )
-                log_warning(f"Response content: {r.content}")
+            raw_json = json.loads(response.text)
+            log_info(f"Raw JSON received: {raw_json}")
 
-                # Fallback to Playwright in case of non-200 status
-                if fallback_to_playwright:
-                    log_info(f"Fallback to Playwright for {identifier}")
-                    return playwright_check(identifier, retrive_all=retrive_all)  # type: ignore[no-any-return]
-                return None
+            parsed_json = raw_json.get("StatusInfo", [])
+            if not parsed_json:
+                raise ValueError("Empty 'StatusInfo' in response.")
 
-            # If the request is successful, parse the response content
-            r_content = r.content
-            log_info(f"Response content: {r_content}")
-            if r_content:
-                raw_json = r.json()
-                log_info(f"Raw JSON: {raw_json}")
-                parsed_json = raw_json["StatusInfo"]
-                log_info(f"Parsed JSON: {parsed_json}")
+            status_list = [
+                {"status": item["StatusName"], "date": item["StatusDateUF"]}
+                for item in parsed_json
+            ]
 
-                status_list: list[dict[str, str]] = []
-                for status in parsed_json:
-                    status_list.append(
-                        {
-                            "status": status["StatusName"],
-                            "date": status["StatusDateUF"],
-                        }
-                    )
-
-                # If the user wants to retrieve all statuses, return the list
-                if retrive_all:
-                    log_info(f"Retrieving all statuses: {status_list}")
-                    return status_list
-
-                log_info(f"Retrieving last status: {status_list[-1]}")
-                return [status_list[-1]]
-
-            # Fallback to Playwright in case content is empty/malformed
-            if fallback_to_playwright:
-                log_info(f"Fallback to Playwright for {identifier}")
-                return playwright_check(identifier, retrive_all=retrive_all)  # type: ignore[no-any-return]
-            return None
         except Exception as e:
-            log_warning(
-                f"Cloudscraper failed for {identifier}, trying Playwright. Error: {e}"
-            )
-            try:
-                if fallback_to_playwright:
-                    log_info(f"Fallback to Playwright for {identifier}")
-                    return playwright_check(identifier, retrive_all=retrive_all)  # type: ignore[no-any-return]
-                return None
-            except Exception as e2:
-                log_error(
-                    f"Error checking status for {identifier} via Playwright: {e2}"
-                )
-                return None
+            log_error(f"Error during AsyncCloudScraper request: {e}")
+            if fallback_to_playwright:
+                try:
+                    log_info("Falling back to Playwright method.")
+                    result = await playwright_check(
+                        identifier, retrieve_all=retrieve_all
+                    )
+                    log_info("Playwright path succeeded.")
+                    # Ensure result is of the correct type for mypy
+                    if result is None or (
+                        isinstance(result, list)
+                        and all(
+                            isinstance(item, dict)
+                            and all(
+                                isinstance(k, str) and isinstance(v, str)
+                                for k, v in item.items()
+                            )
+                            for item in result
+                        )
+                    ):
+                        return result
+                    else:
+                        log_error("Playwright path returned unexpected type.")
+                        return None
+                except Exception as e2:
+                    log_error(f"Playwright path failed: {e2}")
+
+            log_warning("Both Cloudscraper and Playwright paths failed.")
+            return None
+
+        if not status_list:
+            return None
+        return status_list if retrieve_all else [status_list[-1]]
