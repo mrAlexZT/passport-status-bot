@@ -45,6 +45,10 @@ from bot.core.constants import (
     STATS_GRAPH_NO_DATA,
     STATS_GRAPH_PROGRESS,
     STATS_MESSAGE,
+    ADMIN_SCHEDULER_INTERVAL_UPDATED,
+    ADMIN_SCHEDULER_INTERVAL_TOO_LOW,
+    ADMIN_SCHEDULER_INTERVAL_INVALID,
+    ADMIN_SCHEDULER_INTERVAL_CURRENT,
 )
 from bot.core.logger import global_logger, log_error, log_function, log_info
 from bot.core.models.user import SubscriptionModel, UserModel
@@ -78,6 +82,56 @@ class AdminCommands:
             user_id = message.from_user.id if message.from_user else None
             log_error("Toggle logging command failed", user_id, e)
             await message.answer(LOGGING_ERROR_MESSAGE)
+
+    @staticmethod
+    @log_function("set_interval")
+    async def set_interval(message: types.Message) -> None:
+        """Set scheduler interval in minutes (>= 60)."""
+        if not await admin_permission_check(message):
+            return
+        try:
+            parts = message.text.split() if message.text else []
+            if len(parts) < 2:
+                await message.answer(ADMIN_SCHEDULER_INTERVAL_INVALID)
+                return
+            minutes = int(parts[1])
+            if minutes < 60:
+                await message.answer(ADMIN_SCHEDULER_INTERVAL_TOO_LOW)
+                return
+            from bot.core.scheduler import update_scheduler_interval
+            ok = update_scheduler_interval(minutes)
+            if ok:
+                await message.answer(
+                    ADMIN_SCHEDULER_INTERVAL_UPDATED.format(minutes=minutes)
+                )
+            else:
+                await message.answer(ERROR_GENERIC)
+        except ValueError:
+            await message.answer(ADMIN_SCHEDULER_INTERVAL_INVALID)
+        except Exception as e:
+            user_id = message.from_user.id if message.from_user else None
+            log_error("set_interval failed", user_id, e)
+            await message.answer(ERROR_GENERIC)
+
+    @staticmethod
+    @log_function("get_interval")
+    async def get_interval(message: types.Message) -> None:
+        """Get current scheduler interval in minutes."""
+        if not await admin_permission_check(message):
+            return
+        try:
+            from bot.core.scheduler import get_scheduler_interval_minutes
+            mins = get_scheduler_interval_minutes()
+            if mins is None:
+                await message.answer(ERROR_GENERIC)
+                return
+            await message.answer(
+                ADMIN_SCHEDULER_INTERVAL_CURRENT.format(minutes=mins)
+            )
+        except Exception as e:
+            user_id = message.from_user.id if message.from_user else None
+            log_error("get_interval failed", user_id, e)
+            await message.answer(ERROR_GENERIC)
 
     @staticmethod
     @log_function("get_logs")

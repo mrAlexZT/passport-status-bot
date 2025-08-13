@@ -19,7 +19,8 @@ from bot.commands.system import SystemCommands
 from bot.commands.user import UserCommands
 from bot.core.constants import BOT_STOPPED_MANUALLY
 from bot.core.logger import log_error, log_info
-from bot.core.scheduler import scheduler_job
+from bot.core.scheduler import scheduler_job, set_scheduler, JOB_ID
+from bot.core.config import settings
 from bot.middlewares.antiflood import ThrottlingMiddleware
 from bot.middlewares.debug import LoggerMiddleware
 from bot.services import StartupService
@@ -84,6 +85,8 @@ class BotApplication:
         self.dp.message.register(AdminCommands.stats_graph, Command("stats_graph"))
         self.dp.message.register(AdminCommands.users_list, Command("users"))
         self.dp.message.register(AdminCommands.cleanup_db, Command("cleanup"))
+        self.dp.message.register(AdminCommands.set_interval, Command("set_interval"))
+        self.dp.message.register(AdminCommands.get_interval, Command("get_interval"))
 
         # Callback handlers
         self.dp.callback_query.register(
@@ -127,10 +130,12 @@ class BotApplication:
         self.scheduler.add_job(
             async_scheduler_wrapper,
             "interval",
-            minutes=5,
+            id=JOB_ID,
+            minutes=settings.SCHEDULER_INTERVAL_MINUTES,  # default 12 hours
             max_instances=3,
             coalesce=True,
         )
+        set_scheduler(self.scheduler)
 
     async def start(self) -> None:
         """Start the bot application."""

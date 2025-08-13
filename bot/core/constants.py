@@ -121,6 +121,12 @@ ADMIN_USER_SUBSCRIPTION_ENTRY = "   • `{sub_id}`"
 ADMIN_TOTAL_STATS = "\n*Всього користувачів:* {users}\n*Всього підписок:* {subs}"
 ADMIN_INVALID_DATA_WARNING = "\n⚠️ *Увага:* Знайдено {invalid_users} невалідних користувачів та {invalid_subs} невалідних підписок"
 
+# === SCHEDULER MESSAGES ===
+ADMIN_SCHEDULER_INTERVAL_UPDATED = "✅ Інтервал оновлено до {minutes} хв."
+ADMIN_SCHEDULER_INTERVAL_TOO_LOW = "❌ Мінімальний інтервал — 60 хв."
+ADMIN_SCHEDULER_INTERVAL_INVALID = "❌ Невірний формат. Використання: /set_interval <хвилини>"
+ADMIN_SCHEDULER_INTERVAL_CURRENT = "⏱ Поточний інтервал: {minutes} хв."
+
 # === VERSION MESSAGES ===
 VERSION_ERROR = "❌ *Не вдалося отримати інформацію про версію*"
 VERSION_FORMAT = "🤖 Версія бота: *v{version}*\n📦 [Завантажити останню версію]({link})"
