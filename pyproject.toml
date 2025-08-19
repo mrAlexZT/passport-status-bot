@@ -1,6 +1,6 @@
 [project]
 name = "mfa-passport-bot"
-version = "0.2.1"
+version = "1.0.0"
 description = "Telegram bot for tracking MFA passport application status"
 authors = [
   { name = "Ihor Savenko", email = "csigorek@gmail.com" },

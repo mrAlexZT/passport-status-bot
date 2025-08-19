@@ -33,7 +33,7 @@ def log_function(
                 if args and hasattr(args[0], "from_user"):
                     user_id = getattr(args[0].from_user, "id", None)
 
-                global_logger.debug(
+                get_global_logger().debug(
                     f"Function {function_name} started",
                     user_id=user_id,
                     args_count=len(args),
@@ -44,7 +44,7 @@ def log_function(
                     result = await func(*args, **kwargs)
                     execution_time = (datetime.now() - start_time).total_seconds()
 
-                    global_logger.debug(
+                    get_global_logger().debug(
                         f"Function {function_name} completed successfully",
                         user_id=user_id,
                         execution_time=execution_time,
@@ -53,7 +53,7 @@ def log_function(
 
                 except Exception as e:
                     execution_time = (datetime.now() - start_time).total_seconds()
-                    global_logger.error(
+                    get_global_logger().error(
                         f"Function {function_name} failed",
                         user_id=user_id,
                         exception=e,
@@ -72,7 +72,7 @@ def log_function(
                 if args and hasattr(args[0], "from_user"):
                     user_id = getattr(args[0].from_user, "id", None)
 
-                global_logger.debug(
+                get_global_logger().debug(
                     f"Function {function_name} started", user_id=user_id
                 )
 
@@ -80,7 +80,7 @@ def log_function(
                     result = func(*args, **kwargs)
                     execution_time = (datetime.now() - start_time).total_seconds()
 
-                    global_logger.debug(
+                    get_global_logger().debug(
                         f"Function {function_name} completed successfully",
                         user_id=user_id,
                         execution_time=execution_time,
@@ -89,7 +89,7 @@ def log_function(
 
                 except Exception as e:
                     execution_time = (datetime.now() - start_time).total_seconds()
-                    global_logger.error(
+                    get_global_logger().error(
                         f"Function {function_name} failed",
                         user_id=user_id,
                         exception=e,
@@ -295,6 +295,9 @@ class GlobalLogger:
 
 # Global logger instance
 global_logger = GlobalLogger()
+
+def get_global_logger() -> GlobalLogger:
+    return global_logger
 
 
 # Convenience functions
