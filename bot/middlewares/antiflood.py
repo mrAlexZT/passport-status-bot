@@ -39,11 +39,14 @@ def rate_limit(limit: int, key: str | None = None) -> Callable[..., Any]:
 
     @log_function("rate_limit_decorator")
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        # Remove redundant cast
         func.throttling_rate_limit = limit  # type: ignore[attr-defined]
         if key:
             func.throttling_key = key  # type: ignore[attr-defined]
-        return func
+
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return func(*args, **kwargs)
+
+        return wrapper
 
     return decorator
 
