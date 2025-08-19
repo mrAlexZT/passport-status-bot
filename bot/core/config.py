@@ -59,8 +59,24 @@ class Settings(BaseSettings):
     REQUEST_TIMEOUT: int = Field(default=30, ge=5, le=300)  # seconds
 
     # Scheduler
+    SCHEDULER_MAX_INSTANCES: int = Field(
+        default=5, ge=1, le=100, description="Max number of instances"
+    )
+
     SCHEDULER_INTERVAL_MINUTES: int = Field(
         default=720, ge=60, description="Interval in minutes for status checks"
+    )
+
+    SCHEDULER_TIMEOUT: int = Field(
+        default=60, ge=30, le=300, description="Timeout for status checks"
+    )
+
+    SCHEDULER_MAX_RETRIES: int = Field(
+        default=5, ge=1, le=10, description="Max retries for status checks"
+    )
+
+    SCHEDULER_WAIT_SECONDS: int = Field(
+        default=5, ge=1, le=60, description="Wait time between status checks"
     )
 
     model_config = SettingsConfigDict(

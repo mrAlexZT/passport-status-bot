@@ -117,21 +117,45 @@ class BotApplication:
     def _setup_scheduler(self) -> None:
         """Setup periodic tasks scheduler."""
 
-        # Create an async wrapper to properly handle the async scheduler_job
-        async def async_scheduler_wrapper() -> None:
-            """Wrapper to ensure scheduler_job is properly awaited."""
-            try:
-                await scheduler_job()
-            except Exception as e:
-                log_error("Scheduler job failed", exception=e)
+        async def async_scheduler_wrapper(
+            max_retries: int = settings.SCHEDULER_MAX_RETRIES,
+        ) -> None:
+            """Wrapper to run scheduler_job with retries and timeout."""
+
+            def log_retry(retry: int, error_type: str) -> None:
+                log_error(
+                    f"Scheduler job failed due to {error_type} on retry {retry}/{max_retries}"
+                )
+
+            for retry in range(1, max_retries + 1):
+                try:
+                    await asyncio.wait_for(
+                        scheduler_job(), timeout=settings.SCHEDULER_TIMEOUT
+                    )
+                    log_info("Scheduler job completed successfully")
+                    return
+                except TimeoutError:
+                    log_retry(retry, "timeout")
+                except ConnectionError:
+                    log_retry(retry, "connection error")
+                except Exception as e:
+                    log_error("Scheduler job failed with unexpected error", exception=e)
+                    return
+
+                # Sleep only once between retries
+                if retry < max_retries:
+                    await asyncio.sleep(settings.SCHEDULER_WAIT_SECONDS)
+
+            log_error("Scheduler job failed after max retries")
 
         self.scheduler.add_job(
             async_scheduler_wrapper,
             "interval",
             id=JOB_ID,
-            minutes=settings.SCHEDULER_INTERVAL_MINUTES,  # default 12 hours
-            max_instances=3,
+            minutes=settings.SCHEDULER_INTERVAL_MINUTES,
+            max_instances=settings.SCHEDULER_MAX_INSTANCES,
             coalesce=True,
+            kwargs={"max_retries": settings.SCHEDULER_MAX_RETRIES},
         )
         set_scheduler(self.scheduler)
 
