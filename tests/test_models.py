@@ -138,7 +138,8 @@ class TestSubscriptionManager(AsyncTestCase):
 
         with patch.object(SubscriptionModel, "find_one", mock_find_one):
             with patch(
-                "bot.services.user_service.get_application_by_session_id"
+                "bot.services.user_service.get_application_by_session_id",
+                new_callable=AsyncMock,
             ) as mock_get_app:
                 mock_get_app.return_value = MagicMock()  # Application exists
 
