@@ -4,6 +4,7 @@ Handles all user-related operations including subscriptions and profiles.
 """
 
 from datetime import datetime
+from typing import cast
 
 from aiogram import types
 
@@ -14,7 +15,7 @@ from bot.core.constants import (
     SUBSCRIPTION_COUNT_FORMAT,
     # Add this as placeholder
 )
-from bot.core.logger import log_error, log_info
+from bot.core.logger import log_error, log_function, log_info
 from bot.core.models.application import ApplicationModel
 from bot.core.models.user import SubscriptionModel, UserModel
 from bot.core.utils import (
@@ -29,6 +30,7 @@ class UserManager:
     """Manages user profiles and linking operations."""
 
     @staticmethod
+    @log_function("link_user_to_session")
     async def link_user_to_session(message: types.Message, session_id: str) -> bool:
         """Link a user to a session ID after validation."""
         try:
@@ -67,6 +69,7 @@ class UserManager:
             return False
 
     @staticmethod
+    @log_function("unlink_user")
     async def unlink_user(message: types.Message) -> str | None:
         """Unlink user from their session."""
         try:
@@ -75,7 +78,7 @@ class UserManager:
                 return "User not found in database"
 
             old_session_id = user.session_id
-            user.session_id = None  # type: ignore[assignment]
+            user.session_id = None
             await user.save()
             user_id = message.from_user.id if message.from_user else None
             log_info(f"User {user_id} unlinked from session")
@@ -93,6 +96,7 @@ class SubscriptionManager:
     MAX_SUBSCRIPTIONS = 7
 
     @staticmethod
+    @log_function("check_subscription_limit")
     async def check_subscription_limit(user_id: int) -> bool:
         """Check if user has reached subscription limit."""
         try:
@@ -103,6 +107,7 @@ class SubscriptionManager:
             return True  # Assume limit reached on error
 
     @staticmethod
+    @log_function("create_subscription")
     async def create_subscription(user_id: int, session_id: str) -> bool:
         """Create a subscription for a specific session ID."""
         try:
@@ -141,6 +146,7 @@ class SubscriptionManager:
             return False
 
     @staticmethod
+    @log_function("remove_subscription")
     async def remove_subscription(user_id: int, session_id: str) -> bool:
         """Remove a subscription for a specific session ID."""
         try:
@@ -159,6 +165,7 @@ class SubscriptionManager:
             return False
 
     @staticmethod
+    @log_function("get_user_subscriptions")
     async def get_user_subscriptions(user_id: int) -> list[SubscriptionModel]:
         """Get all subscriptions for a user."""
         try:
@@ -169,6 +176,7 @@ class SubscriptionManager:
             return []
 
     @staticmethod
+    @log_function("format_subscription_list")
     def format_subscription_list(subscriptions: list[SubscriptionModel]) -> str:
         """Format subscription list into readable text."""
         if not subscriptions:
@@ -189,16 +197,24 @@ class ApplicationStatusManager:
     async def get_application_status(session_id: str) -> ApplicationModel | None:
         """Get application status by session ID."""
         try:
-            return await get_application_by_session_id(session_id)
+            result = cast(
+                ApplicationModel | None, await get_application_by_session_id(session_id)
+            )
+            if result is not None:
+                return result
+            return None
         except Exception as e:
             log_error("Failed to get application status", None, e)
             return None
 
     @staticmethod
+    @log_function("update_application_status")
     async def update_application_status(
         session_id: str,
     ) -> tuple[bool, ApplicationModel | None]:
         """Update application status from external source."""
+        application = None
+        status_data = None
         try:
             scraper = AsyncCloudScraper()
             status_data = await scraper.check(session_id, retrieve_all=True)
@@ -243,6 +259,10 @@ class CabinetManager:
     @staticmethod
     async def get_user_cabinet_info(message: types.Message) -> dict | None:
         """Get comprehensive user cabinet information."""
+        user = None
+        application = None
+        user_id = None
+        subscriptions = None
         try:
             user = await get_user_by_message(message)
             if not user:

@@ -10,11 +10,13 @@ JOB_ID = "status_check"
 scheduler_ref: AsyncIOScheduler | None = None
 
 
+@log_function("set_scheduler")
 def set_scheduler(scheduler: AsyncIOScheduler) -> None:
     global scheduler_ref
     scheduler_ref = scheduler
 
 
+@log_function("update_scheduler_interval")
 def update_scheduler_interval(minutes: int) -> bool:
     if not scheduler_ref:
         return False
@@ -25,6 +27,7 @@ def update_scheduler_interval(minutes: int) -> bool:
     return True
 
 
+@log_function("get_scheduler_interval_minutes")
 def get_scheduler_interval_minutes() -> int | None:
     if not scheduler_ref:
         return None

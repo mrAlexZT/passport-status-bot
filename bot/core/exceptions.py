@@ -4,10 +4,13 @@ Custom exception classes for better error handling and categorization.
 
 from typing import Any
 
+from bot.core.logger import log_function
+
 
 class BotError(Exception):
     """Base exception for all bot-related errors."""
 
+    @log_function("__init__")
     def __init__(
         self,
         message: str,
@@ -19,6 +22,7 @@ class BotError(Exception):
         self.context = context or {}
         super().__init__(self.message)
 
+    @log_function("__str__")
     def __str__(self) -> str:
         if self.error_code:
             return f"[{self.error_code}] {self.message}"

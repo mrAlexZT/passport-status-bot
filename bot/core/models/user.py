@@ -8,6 +8,8 @@ from beanie import Document
 from pydantic import Field, field_validator
 from pymongo import ASCENDING, IndexModel
 
+from bot.core.logger import log_function
+
 
 class UserModel(Document):
     """User model with enhanced validation and indexing."""
@@ -30,6 +32,7 @@ class UserModel(Document):
 
     @field_validator("session_id")
     @classmethod
+    @log_function("validate_session_id")
     def validate_session_id(cls, v: str) -> str:
         """Validate session ID format."""
         if not v.isdigit():
@@ -38,6 +41,7 @@ class UserModel(Document):
 
     @field_validator("telegram_id")
     @classmethod
+    @log_function("validate_telegram_id")
     def validate_telegram_id(cls, v: str) -> str:
         """Validate Telegram ID format."""
         if not v.isdigit():
@@ -46,6 +50,7 @@ class UserModel(Document):
             raise ValueError("Telegram ID must be positive")
         return v
 
+    @log_function("update_timestamp")
     def update_timestamp(self) -> None:
         """Update the updated_at timestamp."""
         self.updated_at = datetime.now(UTC)

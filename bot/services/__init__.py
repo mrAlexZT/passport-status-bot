@@ -21,7 +21,7 @@ from bot.core.constants import (
     BOT_STARTUP_FAILED,
     BOT_STOPPED_MESSAGE,
 )
-from bot.core.logger import log_error, log_info
+from bot.core.logger import log_error, log_function, log_info
 from bot.core.models.application import ApplicationModel
 from bot.core.models.push import PushModel
 from bot.core.models.request_log import RequestLog
@@ -33,18 +33,22 @@ class BotService:
     """Service class for bot-related operations."""
 
     @staticmethod
+    @log_function("is_admin")
     def is_admin(user_id: int) -> bool:
         """Check if user is admin."""
         return str(user_id) == str(settings.ADMIN_ID)
 
     @staticmethod
+    @log_function("get_user_commands")
     def get_user_commands(is_admin: bool) -> list[types.BotCommand]:
         """Return the list of commands for a user depending on admin status."""
         from bot.core.command_registry import CommandRegistry
 
-        return CommandRegistry.get_commands_for_user(is_admin)
+        result = CommandRegistry.get_commands_for_user(is_admin)
+        return list(result)  # Ensure always a list
 
     @staticmethod
+    @log_function("set_user_commands")
     async def set_user_commands(user_id: int) -> None:
         """Set the list of commands for a user depending on admin status."""
         try:
@@ -60,6 +64,7 @@ class StartupService:
     """Service for handling bot startup and shutdown."""
 
     @staticmethod
+    @log_function("startup")
     async def startup() -> None:
         """Initialize bot on startup."""
         try:
@@ -89,6 +94,7 @@ class StartupService:
             raise
 
     @staticmethod
+    @log_function("shutdown")
     async def shutdown() -> None:
         """Clean shutdown of bot."""
         try:
@@ -107,6 +113,7 @@ class DatabaseService:
     """Service for database operations."""
 
     @staticmethod
+    @log_function("initialize")
     async def initialize() -> None:
         """Initialize database connection and models."""
         from beanie import init_beanie
@@ -132,6 +139,7 @@ class LogService:
     """Service for log-related operations."""
 
     @staticmethod
+    @log_function("read_log_tail")
     def read_log_tail(log_path: Path, lines: int = 50) -> str:
         """Read the last N lines from a log file."""
         if not log_path.exists():
@@ -144,6 +152,7 @@ class LogService:
             return "\n".join(tail)
 
     @staticmethod
+    @log_function("get_logs_info")
     async def get_logs_info() -> tuple[str | None, str | None]:
         """Get recent logs and error logs."""
         logs_dir = Path("logs")
@@ -175,6 +184,7 @@ class StatsService:
     """Service for statistics operations."""
 
     @staticmethod
+    @log_function("get_basic_stats")
     async def get_basic_stats() -> dict:
         """Get basic bot statistics."""
         user_count_task = UserModel.count()
@@ -207,6 +217,7 @@ class StatsService:
         }
 
     @staticmethod
+    @log_function("generate_stats_graph")
     async def generate_stats_graph() -> BufferedInputFile | None:
         """Generate statistics graph."""
         logs = await RequestLog.find_all().to_list()
@@ -244,6 +255,7 @@ class BroadcastService:
     """Service for broadcast operations."""
 
     @staticmethod
+    @log_function("filter_broadcast_users")
     def filter_broadcast_users(users: list, excepted_users: set) -> list:
         """Filter out admin and excepted users from the broadcast list."""
         return [
@@ -257,8 +269,10 @@ class BroadcastService:
         ]
 
     @staticmethod
+    @log_function("send_broadcast_message")
     async def send_broadcast_message(
-        users: list, message: types.Message
+        users: list,
+        message: types.Message,
     ) -> tuple[int, int, int]:
         """Send broadcast message to users, return (success, blocked, error) counts."""
         success_count = 0
@@ -304,6 +318,7 @@ class VersionService:
     """Service for version-related operations."""
 
     @staticmethod
+    @log_function("get_version_info")
     async def get_version_info() -> tuple[str | None, str]:
         """Get current bot version and repository link."""
         await update_version()

@@ -27,6 +27,7 @@ from bot.core.models.request_log import RequestLog
 from bot.core.utils import get_user_id_str
 
 
+@log_function("rate_limit")
 def rate_limit(limit: int, key: str | None = None) -> Callable[..., Any]:
     """
     Decorator for rate limiting handlers.
@@ -38,18 +39,19 @@ def rate_limit(limit: int, key: str | None = None) -> Callable[..., Any]:
 
     @log_function("rate_limit_decorator")
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        # Use type: ignore to suppress mypy warnings for dynamic attributes
+        # Remove redundant cast
         func.throttling_rate_limit = limit  # type: ignore[attr-defined]
         if key:
             func.throttling_key = key  # type: ignore[attr-defined]
         return func
 
-    return decorator  # type: ignore[no-any-return]
+    return decorator
 
 
 class UserSpamTracker:
     """Track spam patterns for individual users."""
 
+    @log_function("__init__")
     def __init__(self) -> None:
         # Track recent messages per user (sliding window)
         self.user_messages: dict[int, deque] = defaultdict(lambda: deque(maxlen=20))
@@ -62,6 +64,7 @@ class UserSpamTracker:
         # Track repeated identical messages
         self.user_last_messages: dict[int, dict[str, datetime]] = defaultdict(dict)
 
+    @log_function("is_spam_pattern")
     def is_spam_pattern(
         self, user_id: int, message_text: str, current_time: datetime
     ) -> bool:
@@ -96,6 +99,7 @@ class UserSpamTracker:
 
         return False
 
+    @log_function("record_message")
     def record_message(
         self, user_id: int, message_text: str, current_time: datetime
     ) -> None:
@@ -106,17 +110,20 @@ class UserSpamTracker:
         if message_text.startswith("/"):
             self.user_commands[user_id].append(current_time)
 
+    @log_function("escalate_warning")
     def escalate_warning(self, user_id: int) -> int:
         """Escalate warning level for a user and return new level."""
         self.user_warnings[user_id] += 1
         return self.user_warnings[user_id]
 
+    @log_function("apply_temporary_ban")
     def apply_temporary_ban(self, user_id: int, duration_minutes: int) -> None:
         """Apply a temporary ban to a user."""
         ban_until = datetime.utcnow() + timedelta(minutes=duration_minutes)
         self.user_bans[user_id] = ban_until
         log_info(f"User {user_id} temporarily banned until {ban_until}")
 
+    @log_function("is_banned")
     def is_banned(self, user_id: int) -> tuple[bool, datetime | None]:
         """Check if user is currently banned."""
         if user_id not in self.user_bans:
@@ -130,6 +137,7 @@ class UserSpamTracker:
 
         return True, ban_until
 
+    @log_function("reset_warnings")
     def reset_warnings(self, user_id: int) -> None:
         """Reset warnings for a user (good behavior)."""
         if self.user_warnings[user_id] > 0:
@@ -141,6 +149,7 @@ class AntiSpamMiddleware(BaseMiddleware):
     Advanced per-user antispam middleware with pattern detection and escalating penalties.
     """
 
+    @log_function("__init__")
     def __init__(
         self, base_limit: int = 3, window_seconds: int = 60, spam_detection: bool = True
     ):

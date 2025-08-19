@@ -13,7 +13,7 @@ from playwright.async_api import async_playwright
 from bot.core.logger import log_function, log_info, log_warning
 
 
-@log_function("get_public_proxies_list")
+@log_function("_get_public_proxies_list")
 async def _get_public_proxies_list(
     protocol: str = "http",
     country: str = "ua",
@@ -64,6 +64,7 @@ async def _get_public_proxies_list(
 
     public_proxies: list[str] = []
 
+    @log_function("fetch_text")
     async def fetch_text(url: str) -> str:
         try:
             timeout = aiohttp.ClientTimeout(total=30)
@@ -106,7 +107,7 @@ async def _get_public_proxies_list(
     return public_proxies[:proxies_limit]
 
 
-@log_function("quick_check_proxy")
+@log_function("_quick_check_proxy")
 async def _quick_check_proxy(
     proxy_urls: list[str], timeout_sec: float = 30, max_concurrency: int = 20
 ) -> list[str]:
@@ -117,6 +118,7 @@ async def _quick_check_proxy(
     alive_proxies: list[str] = []
     sem = asyncio.Semaphore(max_concurrency)
 
+    @log_function("check_proxy")
     async def check_proxy(proxy_url: str) -> None:
         async with sem:  # Limit concurrency
             with suppress(Exception):  # Ignore all connection errors
@@ -134,7 +136,7 @@ async def _quick_check_proxy(
     return alive_proxies
 
 
-@log_function("test_proxy_connection")
+@log_function("_test_proxy_connection")
 async def _test_proxy_connection(
     proxy_urls: list[str], timeout_sec: float = 300, concurrency: int = 10
 ) -> list[str]:
@@ -152,6 +154,7 @@ async def _test_proxy_connection(
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
 
+        @log_function("test_proxy")
         async def test_proxy(proxy_url: str) -> bool:
             async with sem:
                 context = None

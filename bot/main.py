@@ -17,7 +17,7 @@ from bot.commands.system import SystemCommands
 from bot.commands.user import UserCommands
 from bot.core.config import settings
 from bot.core.constants import BOT_STOPPED_MANUALLY
-from bot.core.logger import log_error, log_info
+from bot.core.logger import log_error, log_function, log_info
 from bot.core.scheduler import JOB_ID, scheduler_job, set_scheduler
 from bot.middlewares.antiflood import ThrottlingMiddleware
 from bot.middlewares.debug import LoggerMiddleware
@@ -27,6 +27,7 @@ from bot.services import StartupService
 class BotApplication:
     """Main bot application class with integrated command handling."""
 
+    @log_function("__init__")
     def __init__(self) -> None:
         self.dp = Dispatcher(storage=MemoryStorage())
         self.scheduler = AsyncIOScheduler()
@@ -34,12 +35,14 @@ class BotApplication:
         self._setup_handlers()
         self._setup_scheduler()
 
+    @log_function("_setup_middleware")
     def _setup_middleware(self) -> None:
         """Setup middleware for the dispatcher."""
         self.dp.message.middleware(ThrottlingMiddleware())
         self.dp.callback_query.middleware(ThrottlingMiddleware())
         self.dp.message.middleware(LoggerMiddleware())
 
+    @log_function("_setup_handlers")
     def _setup_handlers(self) -> None:
         """Setup all command and message handlers."""
         # System commands (available to all users)
@@ -104,6 +107,7 @@ class BotApplication:
             SystemCommands.command_not_found, self._is_unknown_command
         )
 
+    @log_function("_is_unknown_command")
     def _is_unknown_command(self, message: types.Message) -> bool:
         """Check if message is an unknown command."""
         if not message.text or not message.text.startswith("/"):
@@ -114,14 +118,17 @@ class BotApplication:
         command = message.text.split()[0].split("@")[0]
         return not CommandRegistry.is_valid_command(command)
 
+    @log_function("_setup_scheduler")
     def _setup_scheduler(self) -> None:
         """Setup periodic tasks scheduler."""
 
+        @log_function("async_scheduler_wrapper")
         async def async_scheduler_wrapper(
             max_retries: int = settings.SCHEDULER_MAX_RETRIES,
         ) -> None:
             """Wrapper to run scheduler_job with retries and timeout."""
 
+            @log_function("log_retry")
             def log_retry(retry: int, error_type: str) -> None:
                 log_error(
                     f"Scheduler job failed due to {error_type} on retry {retry}/{max_retries}"
@@ -159,6 +166,7 @@ class BotApplication:
         )
         set_scheduler(self.scheduler)
 
+    @log_function("start")
     async def start(self) -> None:
         """Start the bot application."""
         try:
@@ -182,6 +190,7 @@ class BotApplication:
                 self.scheduler.shutdown()
 
 
+@log_function("main")
 def main() -> None:
     """Main entry point."""
     app = BotApplication()

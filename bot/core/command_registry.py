@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 from aiogram import types
 
+from bot.core.logger import log_function
+
 if TYPE_CHECKING:
     pass
 
@@ -78,10 +80,11 @@ class CommandRegistry:
     }
 
     @classmethod
+    @log_function("get_commands_for_user")
     def get_commands_for_user(cls, is_admin: bool) -> list[types.BotCommand]:
         """Get commands available for a specific user role."""
         if is_admin:
-            return cls.ALL_COMMANDS
+            return list(cls.ALL_COMMANDS)
 
         return [
             cmd
@@ -90,11 +93,13 @@ class CommandRegistry:
         ]
 
     @classmethod
+    @log_function("is_valid_command")
     def is_valid_command(cls, command: str) -> bool:
         """Check if a command is valid."""
         return any(cmd.command == command for cmd in cls.ALL_COMMANDS)
 
     @classmethod
+    @log_function("is_admin_command")
     def is_admin_command(cls, command: str) -> bool:
         """Check if a command requires admin privileges."""
         return command in cls.ADMIN_ONLY_COMMANDS

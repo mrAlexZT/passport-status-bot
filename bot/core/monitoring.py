@@ -9,7 +9,7 @@ from typing import Any
 
 import psutil
 
-from bot.core.logger import log_error, log_info, log_warning
+from bot.core.logger import log_error, log_function, log_info, log_warning
 from bot.core.models.request_log import RequestLog
 from bot.core.models.user import SubscriptionModel, UserModel
 
@@ -41,11 +41,13 @@ class HealthMetrics:
 class HealthChecker:
     """System health monitoring and diagnostics."""
 
+    @log_function("__init__")
     def __init__(self) -> None:
         self.start_time = datetime.utcnow()
         self._last_health_check: HealthMetrics | None = None
         self._health_history: list[HealthMetrics] = []
 
+    @log_function("check_database_health")
     async def check_database_health(self) -> tuple[str, float]:
         """Check database connectivity and response time."""
         try:
@@ -60,6 +62,7 @@ class HealthChecker:
             log_error(f"Database health check failed: {e}")
             return "unhealthy", 0.0
 
+    @log_function("get_system_metrics")
     async def get_system_metrics(self) -> HealthMetrics:
         """Collect comprehensive system metrics."""
         metrics = HealthMetrics()
@@ -104,6 +107,7 @@ class HealthChecker:
 
         return metrics
 
+    @log_function("perform_health_check")
     async def perform_health_check(self) -> HealthMetrics:
         """Perform comprehensive health check."""
         log_info("Performing system health check")
@@ -125,8 +129,9 @@ class HealthChecker:
                 errors=metrics.errors_last_hour,
             )
 
-        return metrics
+        return metrics  # type: ignore[no-any-return]
 
+    @log_function("get_health_summary")
     def get_health_summary(self) -> dict[str, Any]:
         """Get health summary for API/admin display."""
         if not self._last_health_check:
@@ -157,11 +162,13 @@ class HealthChecker:
 class PerformanceMonitor:
     """Monitor and track performance metrics."""
 
+    @log_function("__init__")
     def __init__(self) -> None:
         self._request_times: list[float] = []
         self._error_counts: dict[str, int] = {}
         self._start_time = time.time()
 
+    @log_function("record_request_time")
     def record_request_time(self, duration: float, endpoint: str = "unknown") -> None:
         """Record request processing time."""
         self._request_times.append(duration)
@@ -178,10 +185,12 @@ class PerformanceMonitor:
                 endpoint=endpoint,
             )
 
+    @log_function("record_error")
     def record_error(self, error_type: str) -> None:
         """Record error occurrence."""
         self._error_counts[error_type] = self._error_counts.get(error_type, 0) + 1
 
+    @log_function("get_performance_stats")
     def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics."""
         if not self._request_times:

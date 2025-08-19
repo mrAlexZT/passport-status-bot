@@ -24,12 +24,13 @@ from bot.core.exceptions import (
     UserError,
     ValidationError,
 )
-from bot.core.logger import log_error
+from bot.core.logger import log_error, log_function
 
 
 class ErrorHandlerMiddleware(BaseMiddleware):
     """Enhanced error handling middleware with user-friendly messages."""
 
+    @log_function("__call__")
     async def __call__(
         self,
         handler: Callable,
@@ -43,6 +44,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
             await self._handle_error(error, event, data)
             return None
 
+    @log_function("_handle_error")
     async def _handle_error(
         self,
         error: Exception,
@@ -98,6 +100,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
                     exception=send_error,
                 )
 
+    @log_function("_get_user_message")
     def _get_user_message(self, error: Exception) -> str:
         """Get user-friendly error message based on exception type."""
         if isinstance(error, RateLimitError):
@@ -135,6 +138,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
 class GlobalErrorHandler:
     """Global error handler for uncaught exceptions."""
 
+    @log_function("handle_startup_error")
     @staticmethod
     async def handle_startup_error(error: Exception) -> None:
         """Handle errors during bot startup."""
@@ -142,18 +146,21 @@ class GlobalErrorHandler:
         print(f"❌ Failed to start bot: {error}")
         raise SystemExit(1)
 
+    @log_function("handle_shutdown_error")
     @staticmethod
     async def handle_shutdown_error(error: Exception) -> None:
         """Handle errors during bot shutdown."""
         log_error("Bot shutdown error", exception=error)
         print(f"⚠️ Error during shutdown: {error}")
 
+    @log_function("setup_exception_handlers")
     @staticmethod
     def setup_exception_handlers() -> None:
         """Setup global exception handlers."""
         import sys
         from types import TracebackType
 
+        @log_function("handle_exception")
         def handle_exception(
             exc_type: type[BaseException],
             exc_value: BaseException,
@@ -172,6 +179,7 @@ class GlobalErrorHandler:
         sys.excepthook = handle_exception
 
         # Handle asyncio exceptions
+        @log_function("handle_asyncio_exception")
         def handle_asyncio_exception(loop: Any, context: dict[str, Any]) -> None:
             exception = context.get("exception")
             if exception:

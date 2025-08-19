@@ -20,13 +20,14 @@ from bot.core.constants import (
     STATUS_GENERAL_HEADER,
     WAIT_CHECKING,
 )
-from bot.core.logger import log_error
+from bot.core.logger import log_error, log_function
 from bot.core.models.application import ApplicationModel, StatusModel
 from bot.core.models.user import UserModel
 
 # === BASIC UTILITY FUNCTIONS ===
 
 
+@log_function("get_user_id_str")
 def get_user_id_str(message: types.Message) -> str:
     """Convert message user ID to string."""
     if message.from_user is None:
@@ -34,6 +35,7 @@ def get_user_id_str(message: types.Message) -> str:
     return str(message.from_user.id)
 
 
+@log_function("get_safe_user_id")
 def get_safe_user_id(message: types.Message) -> int | None:
     """Safely extract user ID from message."""
     if message.from_user:
@@ -41,18 +43,21 @@ def get_safe_user_id(message: types.Message) -> int | None:
     return None
 
 
+@log_function("get_user_by_telegram_id")
 async def get_user_by_telegram_id(telegram_id: int) -> UserModel | None:
     """Get a user by Telegram ID as string."""
     result = await UserModel.find_one({"telegram_id": str(telegram_id)})
     return cast(UserModel | None, result)
 
 
+@log_function("get_user_by_message")
 async def get_user_by_message(message: types.Message) -> UserModel | None:
     """Get user by message."""
     result = await UserModel.find_one({"telegram_id": get_user_id_str(message)})
     return cast(UserModel | None, result)
 
 
+@log_function("get_application_by_session_id")
 async def get_application_by_session_id(session_id: str) -> ApplicationModel | None:
     """Get application by session ID."""
     result = await ApplicationModel.find_one({"session_id": session_id})

@@ -495,6 +495,7 @@ class AdminCommands:
                 await message.edit_text(ADMIN_CLEANUP_ERROR, parse_mode="Markdown")
 
     @staticmethod
+    @log_function("_analyze_db")
     async def _analyze_db(message: types.Message | None = None) -> tuple:
         """Analyze database for invalid records."""
         from typing import Any
@@ -554,6 +555,7 @@ class AdminCommands:
         return users_to_delete, subs_to_delete, stats
 
     @staticmethod
+    @log_function("_perform_cleanup")
     async def _perform_cleanup(
         users_to_delete: list,
         subs_to_delete: list,

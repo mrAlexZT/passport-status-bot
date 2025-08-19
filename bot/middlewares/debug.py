@@ -7,6 +7,7 @@ from aiogram.types import TelegramObject
 from bot.core.logger import log_error, log_function, log_info
 
 
+@log_function("get_safe_user_id")
 def get_safe_user_id(event: TelegramObject) -> int | None:
     """Safely extract user ID from event."""
     if hasattr(event, "from_user") and event.from_user:
@@ -15,7 +16,7 @@ def get_safe_user_id(event: TelegramObject) -> int | None:
 
 
 class LoggerMiddleware(BaseMiddleware):
-    @log_function("setup_logger_middleware")
+    @log_function("__call__")
     async def __call__(
         self,
         handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
