@@ -26,6 +26,8 @@ from bot.core.models.user import UserModel
 
 # === BASIC UTILITY FUNCTIONS ===
 
+FINAL_APPLICATION_STATUSES = {"Документ видано"}
+
 
 def get_user_id_str(message: types.Message) -> str:
     """Convert message user ID to string."""
@@ -59,11 +61,20 @@ async def get_application_by_session_id(session_id: str) -> ApplicationModel | N
     return cast(ApplicationModel | None, result)
 
 
+def has_final_application_status(statuses: list[StatusModel]) -> bool:
+    """Return True when the application already has a terminal status."""
+    return any(status.status in FINAL_APPLICATION_STATUSES for status in statuses)
+
+
 async def process_status_update(
     application: ApplicationModel, scraper: Any, notify_subscribers_func: Callable
 ) -> None:
     """Process status updates for an application and notify subscribers if there are new statuses."""
     try:
+        existing_statuses = application.statuses or []
+        if has_final_application_status(existing_statuses):
+            return
+
         # Fetch current statuses from the API using the correct method name
         current_statuses_data = await scraper.check(
             application.session_id, retrieve_all=True
@@ -78,8 +89,6 @@ async def process_status_update(
         )
 
         # Get existing statuses from the application
-        existing_statuses = application.statuses or []
-
         # Find new statuses by comparing with existing ones
         new_statuses = []
         existing_status_texts = {status.status for status in existing_statuses}
