@@ -15,7 +15,6 @@ python = ">=3.12,<3.14"
 pydantic = "^2.11.7"
 pydantic-settings = "^2.10.1"
 beanie = "^2.0.0"
-motor = "^3.7.1"
 fake-headers = "^1.0.2"
 aiogram = "^3.21.0"
 apscheduler = "^3.11.0"
@@ -111,7 +110,6 @@ module = [
     "cloudscraper.*",
     "aiogram.*",
     "beanie.*",
-    "motor.*",
     "pymongo.*",
     "aiohttp.*",
     "playwright.*",
