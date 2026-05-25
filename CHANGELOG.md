@@ -1,3 +1,13 @@
+# 1.0.1
+
+- Compare: [`v1.0.0` → `v1.0.1`](https://github.com/mrAlexZT/passport-status-bot/compare/v1.0.0...v1.0.1)
+
+## Fixed
+- Fixed startup crash during `init_beanie(...)` by switching the async MongoDB backend from `motor` to `pymongo`
+- Fixed static type-checking and pre-commit `mypy` compatibility for Beanie query helpers
+- Fixed Docker/runtime dependency consistency by using the committed lockfile and avoiding transient resolver drift
+
+
 # 1.0.0
 
 - Compare: [`main@7f85cc7` → `dev@390707a`](https://github.com/mrAlexZT/passport-status-bot/compare/7f85cc7...390707a)
