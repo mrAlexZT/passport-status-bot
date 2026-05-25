@@ -5,7 +5,7 @@ Now focuses only on low-level helper functions.
 
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from aiogram import types
 
@@ -45,17 +45,20 @@ def get_safe_user_id(message: types.Message) -> int | None:
 
 async def get_user_by_telegram_id(telegram_id: int) -> UserModel | None:
     """Get a user by Telegram ID as string."""
-    return await UserModel.find_one({"telegram_id": str(telegram_id)})
+    result: Any = await UserModel.find_one({"telegram_id": str(telegram_id)})
+    return cast(UserModel | None, result)
 
 
 async def get_user_by_message(message: types.Message) -> UserModel | None:
     """Get user by message."""
-    return await UserModel.find_one({"telegram_id": get_user_id_str(message)})
+    result: Any = await UserModel.find_one({"telegram_id": get_user_id_str(message)})
+    return cast(UserModel | None, result)
 
 
 async def get_application_by_session_id(session_id: str) -> ApplicationModel | None:
     """Get application by session ID."""
-    return await ApplicationModel.find_one({"session_id": session_id})
+    result: Any = await ApplicationModel.find_one({"session_id": session_id})
+    return cast(ApplicationModel | None, result)
 
 
 def has_final_application_status(statuses: list[StatusModel]) -> bool:
