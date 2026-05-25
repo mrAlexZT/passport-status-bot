@@ -45,19 +45,19 @@ def get_safe_user_id(message: types.Message) -> int | None:
 
 async def get_user_by_telegram_id(telegram_id: int) -> UserModel | None:
     """Get a user by Telegram ID as string."""
-    result = await UserModel.find_one({"telegram_id": str(telegram_id)})
+    result: Any = await UserModel.find_one({"telegram_id": str(telegram_id)})
     return cast(UserModel | None, result)
 
 
 async def get_user_by_message(message: types.Message) -> UserModel | None:
     """Get user by message."""
-    result = await UserModel.find_one({"telegram_id": get_user_id_str(message)})
+    result: Any = await UserModel.find_one({"telegram_id": get_user_id_str(message)})
     return cast(UserModel | None, result)
 
 
 async def get_application_by_session_id(session_id: str) -> ApplicationModel | None:
     """Get application by session ID."""
-    result = await ApplicationModel.find_one({"session_id": session_id})
+    result: Any = await ApplicationModel.find_one({"session_id": session_id})
     return cast(ApplicationModel | None, result)
 
 

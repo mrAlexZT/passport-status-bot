@@ -27,23 +27,16 @@ COPY --from=poetry-base ${POETRY_VENV} ${POETRY_VENV}
 WORKDIR /app
 
 # Copy dependency files first to cache dependencies
-COPY pyproject.toml README.md ./
-
-# Lock dependencies
-RUN poetry lock
+COPY pyproject.toml poetry.lock README.md ./
 
 # [OPTIONAL] Validate the project is properly configured
 RUN poetry check
 
 # Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root --without dev
+RUN poetry install --no-interaction --no-ansi --no-root --only main
 
 # Install Playwright and browsers
-RUN poetry run pip install --no-cache-dir playwright \
-    && poetry run playwright install chromium
-
-# Install new version of cloudscraper from GitHub because it's not in the PyPI
-RUN poetry run pip install git+https://github.com/VeNoMouS/cloudscraper.git@3.0.0
+RUN poetry run playwright install chromium
 
 # Copy app source code
 COPY . .

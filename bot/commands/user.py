@@ -2,11 +2,9 @@
 User management commands for profile and session handling.
 """
 
-import cv2
-import numpy as np
 from aiogram import types
 from PIL import Image
-from qreader import QReader
+from pyzbar.pyzbar import decode
 
 from bot.core.api import AsyncCloudScraper
 from bot.core.constants import (
@@ -209,27 +207,14 @@ class UserCommands:
             # Open the image using PIL
             photo = Image.open(download_file)
 
-            # Ensure the image is in RGB format
-            image_np = np.array(photo)
-
-            # Convert RGB to BGR for OpenCV
-            image_processed = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
-
-            # Initialize the QR code reader and decode
-            qr = QReader()
-
-            # Handle the detection and decoding of QR codes
-            detection_result = qr.detect_and_decode(image=image_processed)
+            decoded_items = decode(photo.convert("RGB"))
             decoded: str | None = None
 
-            if isinstance(detection_result, str):
-                # Single QR code detected
-                decoded = detection_result
-            elif isinstance(detection_result, tuple) and len(detection_result) > 0:
-                # Handle tuple case (multiple QR codes detected)
-                decoded_items = detection_result[0]
-                if decoded_items and len(decoded_items) > 0:
-                    decoded = decoded_items[0]
+            if decoded_items:
+                try:
+                    decoded = decoded_items[0].data.decode("utf-8")
+                except UnicodeDecodeError:
+                    decoded = decoded_items[0].data.decode("utf-8", errors="ignore")
 
             if decoded:
                 await safe_edit_message(

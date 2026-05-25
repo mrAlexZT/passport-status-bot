@@ -20,12 +20,12 @@ fake-headers = "^1.0.2"
 aiogram = "^3.21.0"
 apscheduler = "^3.11.0"
 pillow = "^11.3.0"
-qreader = "^3.16"
 matplotlib = "^3.10.5"
 aiohttp = "^3.12.15"
 playwright = "^1.54.0"
 requests = "^2.32.4"
 cloudscraper = { git = "https://github.com/VeNoMouS/cloudscraper.git", tag = "3.0.0" }
+pyzbar = "^0.1.9"
 
 [project.scripts]
 bot = "bot.__main__:main"
@@ -107,8 +107,7 @@ exclude = [
 
 [[tool.mypy.overrides]]
 module = [
-    "qreader.*",
-    "fake_headers.*",
+    "pyzbar.*",
     "cloudscraper.*",
     "aiogram.*",
     "beanie.*",
@@ -158,5 +157,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [[tool.mypy.overrides]]
-module = ["cv2.*", "apscheduler.*"]
+module = ["apscheduler.*"]
 ignore_missing_imports = true

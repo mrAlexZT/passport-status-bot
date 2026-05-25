@@ -216,11 +216,12 @@ class StatsService:
         days = [log.timestamp.date() for log in logs]
         counter = Counter(days)
         days_sorted = sorted(counter.keys())
+        day_labels = [day.isoformat() for day in days_sorted]
         counts = [counter[day] for day in days_sorted]
 
         # Create plot
         plt.figure(figsize=(12, 6))
-        plt.plot(days_sorted, counts, marker="o", linewidth=2, markersize=6)
+        plt.plot(day_labels, counts, marker="o", linewidth=2, markersize=6)
         plt.title("Запити за днями", fontsize=14, fontweight="bold")
         plt.xlabel("Дата", fontsize=12)
         plt.ylabel("Кількість запитів", fontsize=12)
