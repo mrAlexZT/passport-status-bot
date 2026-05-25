@@ -9,7 +9,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 # Set up test environment variables before importing settings
 os.environ.setdefault("TOKEN", "1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890TEST")
@@ -105,7 +105,7 @@ async def test_subscription(db_client: Any) -> AsyncGenerator[SubscriptionModel,
 @pytest.fixture
 async def db_client() -> AsyncGenerator[Any, None]:
     """Create test database client."""
-    client: AsyncIOMotorClient = AsyncIOMotorClient("mongodb://localhost:27017")
+    client: AsyncMongoClient = AsyncMongoClient("mongodb://localhost:27017")
     db = client.test_mfa_bot
 
     # Initialize test collections
@@ -119,7 +119,7 @@ async def db_client() -> AsyncGenerator[Any, None]:
     await db.users.delete_many({})
     await db.subscriptions.delete_many({})
     await db.applications.delete_many({})
-    client.close()
+    await client.close()
 
 
 class TestDataFactory:

@@ -1,9 +1,9 @@
-import motor.motor_asyncio
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo import AsyncMongoClient
+from pymongo.asynchronous.database import AsyncDatabase
 
 from bot.core.config import settings
 
-client: AsyncIOMotorClient = motor.motor_asyncio.AsyncIOMotorClient(
+client: AsyncMongoClient = AsyncMongoClient(
     settings.DATABASE_URL, uuidRepresentation="standard"
 )
-db: AsyncIOMotorDatabase = client[settings.DATABASE_NAME]
+db: AsyncDatabase = client[settings.DATABASE_NAME]
