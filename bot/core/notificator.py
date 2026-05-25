@@ -67,7 +67,7 @@ async def notify_subscribers(
                     PUSH_NOTIFICATION_ERROR.format(
                         telegram_id=_subscription.telegram_id, error=str(e)
                     ),
-                    _subscription.telegram_id,
+                    int(_subscription.telegram_id),
                     e,
                 )
 
@@ -80,6 +80,6 @@ async def notify_subscribers(
         except Exception as e:
             log_error(
                 PUSH_NOTIFICATION_SEND_ERROR.format(error=str(e)),
-                _subscription.telegram_id,
+                int(_subscription.telegram_id),
                 e,
             )

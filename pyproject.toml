@@ -107,7 +107,9 @@ exclude = [
 
 [[tool.mypy.overrides]]
 module = [
-    "fake_headers.*",
+    "fake_headers",
+    "pyzbar",
+    "pyzbar.*",
     "cloudscraper.*",
     "aiogram.*",
     "beanie.*",
@@ -157,5 +159,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [[tool.mypy.overrides]]
-module = ["cv2.*", "apscheduler.*"]
+module = ["apscheduler", "apscheduler.*"]
 ignore_missing_imports = true
