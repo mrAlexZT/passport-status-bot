@@ -3,6 +3,7 @@ services:
     depends_on:
       - mongodb
     build: .
+    restart: unless-stopped
     volumes:
       - .:/mfa_passport_bot
     environment:
@@ -12,8 +13,6 @@ services:
 
   mongodb:
     image: mongo:4.4
-    ports:
-      - '27003:27017'
     volumes:
       - dbdata1:/data/db
     restart: on-failure
