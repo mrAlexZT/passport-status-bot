@@ -15,7 +15,7 @@ services:
     image: mongo:4.4
     volumes:
       - dbdata1:/data/db
-    restart: on-failure
+    restart: unless-stopped
     networks:
       - mfa_passport_bot_net
 
